@@ -1,31 +1,42 @@
 # FLOYao.jl
 
-A backend to efficiently simulate fermionic linear optics circuits (FLO) [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010).
+A backend to efficiently simulate fermionic linear optics (FLO) circuits in [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010).
+
+**Note**    
+The markdown version of this README is automatically generated from `README.ipynb` and some 
+of the hpyerlinks and math doesn't seem to play that well with githubs markdown parser. So you might want to have a look at the `README.ipynb` with jupyter instead for a better reading experience.
 
 ## Contents
  - [Installation](#Installation)
  - [Basic usage](#Basic-usage)
+ - [List of supported gates](#List-of-supported-gates)
  - [Example: Transverse field Ising model](#Example:-Transverse-Field-Ising-model)
  - [Adding support for your own gates](#Adding-support-for-your-own-gates)
  - [Background: Fermionic linear optics circuits](#Background:-Fermionic-linear-optics-circuits)
  - [Known restrictions](#Known-restrictions)
 
 ## Installation
-To install `FLOYao` open the julia REPL and type the following:
-```julia
-pkg> add FLOYao
+
+ > By the time this will be in the julia general registry, it should be as easy as opening
+ > a julia REPL and typing
+ >  ```julia
+ >   pkg> add FLOYao
+ >  ```
+
+But for now I suggest the following way: First open a standard terminal and type 
+```bash
+cd your_favorite_folder_for_code
+git clone git@github.com:PhaseCraft/FLOYao.jl
 ```
+and then open a julia REPL and type
+```
+pkg> dev your_favorite_folder_for_code/FLOYao.jl
+```
+which should make `FLOYao.jl` discoverable for your standard julia installation. 
+Under linux the standard folder for julia packages under development is `/home/username/.julia/dev`
 
 ## Basic usage
-The heart of `FLOYao` is the `MajoranaReg` register type, which efficiently represents a state initialized as 
-```julia
-ψ = zero_state(nq)
-ψ |> kron(nq, q => X for q in 1:k) 
-```
-and with a FLO circuit applied to it. Or expressed in the fermionic language:
-$$
-    \psi = \prod_{i=1}^k c_i^\dagger |\Omega\rangle 
-$$
+The heart of `FLOYao` is the `MajoranaReg` register type, which efficiently represents a state that is a [FLO unitary](#Background:-Fermionic-linear-optics-circuits) applied to the vacuum state $|0⋯0⟩$
 
 First import `Yao` and `FLOYao`:
 
@@ -118,7 +129,7 @@ and finally create a register in the computational zero state via
 
 
 ```julia
-mreg = MajoranaReg(nq, 0) # this is equivalent to `zero_state)`
+mreg = MajoranaReg(nq)
 ```
 
 
@@ -137,7 +148,7 @@ mreg = MajoranaReg(nq, 0) # this is equivalent to `zero_state)`
 
 
 
-Applying the circuit to the register works then exactly the same way as for a normal Array register:
+Applying the circuit to the register works then exactly the same way as for a normal `ArrayReg` register:
 
 
 ```julia
@@ -184,11 +195,11 @@ inδ, paramsδ = expect'(hamiltonian, mreg => circuit)
 
 
 
-    MajoranaReg{Float64}(4, 0) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
+    MajoranaReg{Float64}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
 
 
 
-and just to check that this is all consistent with running a full wavefunction simulation, can apply the same circuit on an `ArrayReg` and compare the expectation values and gradients
+Just to check that this is all consistent with running a full wavefunction simulation, we can apply the same circuit on an `ArrayReg` and compare the expectation values and gradients
 
 
 ```julia
@@ -217,24 +228,40 @@ paramsδ ≈ paramsδ_full
 
 
 
-## Example: Transverse Field Ising model
+## List of supported gates
+
+The following gates are FLO gates and supported by `FLOYao.jl`:
+
+|  Gate | Comment |
+|-------|---------|
+|  `XGate`   | Together with `Y` the only gate that does not preserve fermionic parity |
+|  `YGate`   |   See above  |
+|  `ZGate`   |         |
+|  `RotationGate{⋯,⋯,YGate}`  | The only single qubit rotation gate since $R_x(θ)γ_i R_x(-θ)$ is not a linear combination of Majorana operators for all Majorana operators. Similar for $R_y$ |
+| `PauliKronBlock` | A kronecker product of Pauli operators s.t. that first and last operator are either $X$ or $Y$ and all operators in between are $Z$.  |
+| `RotationGate{⋯,⋯,PauliKronBlock}` | A rotation gate with generator as in the last line. |
+| `AbstractMatrix` | Unless the gate type is already explicitely implemented or know to not be a FLO gate, `FLOYao` will try to automatically convert the gate matrix in the qubit basis to a matrix in the Majorana basis. But note that this is fairly slow (although still poly-time instead of exp-time) |
+
+
+If you want to add support to your own gates, read [this section](#Adding-support-for-your-own-gates) to learn how to do that.
+
+## Example: VQE for the Transverse Field Ising model
 
 For a more realistic use case, we have a look at VQE for the Transverse Field Ising model on a line whose Hamiltonian is given as 
 $$
     H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.
 $$
-and as Ansatz circuits we use the Hamiltonian Variational Ansatz
+As Ansatz circuits we use the Hamiltonian Variational Ansatz
 $$
     U(\vec θ) = ∏_i^p e^{-iθ_{i,U} U} e^{-iθ_{i,T} T} 
 $$
-with the initial state being the groundstate of the TFIM at $J = 0$, $|ψ_i⟩ = |0⋯0⟩$
+with the initial state being the groundstate of the TFIM at $J = 0$, so $|ψ_i⟩ = |0⋯0⟩$
 
 
 ```julia
-# note that this is far beyond what is possible with a full wavefunction simulation
-L = 100 
+L = 100 # this is far beyond what is possible with a full wavefunction simulation
 J = 0.5
-h = 1.
+h = -1.
 p = 10
 
 U = map(1:L-1) do i
@@ -259,7 +286,7 @@ end
 nparams = nparameters(circuit)
 dispatch!(circuit, rand(nparams) ./ 100)
 
-ψ_i = MajoranaReg(L, 0);
+ψ_i = MajoranaReg(L);
 ```
 
 now that we defined the hamiltonian, the ansatz circuit and the initial state we can perform
@@ -278,113 +305,111 @@ for i in 1:iterations
 end
 ```
 
-    Iteration 1, energy = 99.72350957802038
-    Iteration 2, energy = 99.40506967996363
-    Iteration 3, energy = 98.76202821131267
-    Iteration 4, energy = 97.46432218806858
-    Iteration 5, energy = 94.8760933406418
-    Iteration 6, energy = 89.85744274997147
-    Iteration 7, energy = 80.66495993897014
-    Iteration 8, energy = 65.52613565874718
-    Iteration 9, energy = 44.706277096378145
-    Iteration 10, energy = 22.702704698532308
-    Iteration 11, energy = 5.585683940284514
-    Iteration 12, energy = -4.957053736053638
-    Iteration 13, energy = -11.51507490034233
-    Iteration 14, energy = -16.938644625891662
-    Iteration 15, energy = -22.799858577757277
-    Iteration 16, energy = -29.61683483203969
-    Iteration 17, energy = -37.178504470985246
-    Iteration 18, energy = -44.84203010830907
-    Iteration 19, energy = -51.911554043113405
-    Iteration 20, energy = -57.94965135648679
-    Iteration 21, energy = -62.88351660910522
-    Iteration 22, energy = -66.88000315608417
-    Iteration 23, energy = -70.13254847926378
-    Iteration 24, energy = -72.74980240802692
-    Iteration 25, energy = -74.78032473977396
-    Iteration 26, energy = -76.27475030334335
-    Iteration 27, energy = -77.32330501398673
-    Iteration 28, energy = -78.05730844801298
-    Iteration 29, energy = -78.6061254120199
-    Iteration 30, energy = -79.06288335380546
-    Iteration 31, energy = -79.48723263720359
-    Iteration 32, energy = -79.92171373509012
-    Iteration 33, energy = -80.40414299235896
-    Iteration 34, energy = -80.97238940544219
-    Iteration 35, energy = -81.65966007011164
-    Iteration 36, energy = -82.47664457868399
-    Iteration 37, energy = -83.38312975005772
-    Iteration 38, energy = -84.27426661772805
-    Iteration 39, energy = -85.02115376679511
-    Iteration 40, energy = -85.55215722570551
-    Iteration 41, energy = -85.88655795558829
-    Iteration 42, energy = -86.0896267140955
-    Iteration 43, energy = -86.22010996048115
-    Iteration 44, energy = -86.31394312054839
-    Iteration 45, energy = -86.38945436261524
-    Iteration 46, energy = -86.45528566045766
-    Iteration 47, energy = -86.51545669675187
-    Iteration 48, energy = -86.57190690082466
-    Iteration 49, energy = -86.6256492624962
-    Iteration 50, energy = -86.67727270715429
-    Iteration 51, energy = -86.72715905463484
-    Iteration 52, energy = -86.77557842615364
-    Iteration 53, energy = -86.82273313316587
-    Iteration 54, energy = -86.86877942827263
-    Iteration 55, energy = -86.91383943206021
-    Iteration 56, energy = -86.9580084699872
-    Iteration 57, energy = -87.00136011072875
-    Iteration 58, energy = -87.04394995570384
-    Iteration 59, energy = -87.08581868950496
-    Iteration 60, energy = -87.12699465449951
-    Iteration 61, energy = -87.1674960927351
-    Iteration 62, energy = -87.20733313511003
-    Iteration 63, energy = -87.2465095821556
-    Iteration 64, energy = -87.28502449976742
-    Iteration 65, energy = -87.32287364077607
-    Iteration 66, energy = -87.36005069629678
-    Iteration 67, energy = -87.39654837760624
-    Iteration 68, energy = -87.43235932877198
-    Iteration 69, energy = -87.46747687161835
-    Iteration 70, energy = -87.50189558723514
-    Iteration 71, energy = -87.53561174157423
-    Iteration 72, energy = -87.56862356625369
-    Iteration 73, energy = -87.60093140904806
-    Iteration 74, energy = -87.63253777131091
-    Iteration 75, energy = -87.66344725147033
-    Iteration 76, energy = -87.69366641458836
-    Iteration 77, energy = -87.7232036077549
-    Iteration 78, energy = -87.75206873988294
-    Iteration 79, energy = -87.7802730424737
-    Iteration 80, energy = -87.80782882538476
-    Iteration 81, energy = -87.83474923882456
-    Iteration 82, energy = -87.8610480499644
-    Iteration 83, energy = -87.88673943991061
-    Iteration 84, energy = -87.91183782444902
-    Iteration 85, energy = -87.93635770005173
-    Iteration 86, energy = -87.96031351513375
-    Iteration 87, energy = -87.98371956545809
-    Iteration 88, energy = -88.00658991185603
-    Iteration 89, energy = -88.02893831799855
-    Iteration 90, energy = -88.05077820575987
-    Iteration 91, energy = -88.07212262568603
-    Iteration 92, energy = -88.09298424017994
-    Iteration 93, energy = -88.11337531717759
-    Iteration 94, energy = -88.13330773230405
-    Iteration 95, energy = -88.15279297771876
-    Iteration 96, energy = -88.17184217608879
-    Iteration 97, energy = -88.19046609834005
-    Iteration 98, energy = -88.2086751840374
-    Iteration 99, energy = -88.22647956342138
-    Iteration 100, energy = -88.24388908028976
+    Iteration 1, energy = -99.88490767843159
+    Iteration 2, energy = -99.97441634919842
+    Iteration 3, energy = -100.0056763860236
+    Iteration 4, energy = -100.01859116906469
+    Iteration 5, energy = -100.02599635617956
+    Iteration 6, energy = -100.03205626486043
+    Iteration 7, energy = -100.03817176257458
+    Iteration 8, energy = -100.04487079247842
+    Iteration 9, energy = -100.05241364153315
+    Iteration 10, energy = -100.0609878071107
+    Iteration 11, energy = -100.07077199153714
+    Iteration 12, energy = -100.08195848715462
+    Iteration 13, energy = -100.09476245263055
+    Iteration 14, energy = -100.10942717398012
+    Iteration 15, energy = -100.12622819597735
+    Iteration 16, energy = -100.1454772116763
+    Iteration 17, energy = -100.16752593869434
+    Iteration 18, energy = -100.19276997288964
+    Iteration 19, energy = -100.2216524987739
+    Iteration 20, energy = -100.25466765628717
+    Iteration 21, energy = -100.29236328419954
+    Iteration 22, energy = -100.33534267125965
+    Iteration 23, energy = -100.38426484506415
+    Iteration 24, energy = -100.43984281764033
+    Iteration 25, energy = -100.50283909225735
+    Iteration 26, energy = -100.57405762939587
+    Iteration 27, energy = -100.65433138893495
+    Iteration 28, energy = -100.74450453582841
+    Iteration 29, energy = -100.84540845122724
+    Iteration 30, energy = -100.95783087041501
+    Iteration 31, energy = -101.08247781644765
+    Iteration 32, energy = -101.21992855313191
+    Iteration 33, energy = -101.37058456596847
+    Iteration 34, energy = -101.53461458592093
+    Iteration 35, energy = -101.71189883936002
+    Iteration 36, energy = -101.901976913864
+    Iteration 37, energy = -102.10400467832382
+    Iteration 38, energy = -102.31672633328924
+    Iteration 39, energy = -102.53846761974292
+    Iteration 40, energy = -102.76715525120282
+    Iteration 41, energy = -103.00036564869174
+    Iteration 42, energy = -103.2354031419488
+    Iteration 43, energy = -103.4694042807764
+    Iteration 44, energy = -103.69946131713009
+    Iteration 45, energy = -103.92275492642514
+    Iteration 46, energy = -104.13668445415813
+    Iteration 47, energy = -104.3389838195596
+    Iteration 48, energy = -104.52781277778378
+    Iteration 49, energy = -104.70181627432959
+    Iteration 50, energy = -104.8601485638006
+    Iteration 51, energy = -105.00246290042799
+    Iteration 52, energy = -105.12887124926024
+    Iteration 53, energy = -105.23988109223869
+    Iteration 54, energy = -105.33631774759996
+    Iteration 55, energy = -105.41924069062468
+    Iteration 56, energy = -105.48986138550025
+    Iteration 57, energy = -105.5494684692163
+    Iteration 58, energy = -105.59936415865161
+    Iteration 59, energy = -105.64081382274011
+    Iteration 60, energy = -105.67500901690448
+    Iteration 61, energy = -105.70304304828547
+    Iteration 62, energy = -105.72589735822787
+    Iteration 63, energy = -105.74443662995212
+    Iteration 64, energy = -105.75941046942594
+    Iteration 65, energy = -105.77145966743821
+    Iteration 66, energy = -105.78112533829226
+    Iteration 67, energy = -105.7888595704421
+    Iteration 68, energy = -105.79503656333311
+    Iteration 69, energy = -105.79996352961251
+    Iteration 70, energy = -105.8038908962753
+    Iteration 71, energy = -105.80702153772377
+    Iteration 72, energy = -105.80951892120831
+    Iteration 73, energy = -105.8115141478428
+    Iteration 74, energy = -105.81311193899111
+    Iteration 75, energy = -105.8143956569036
+    Iteration 76, energy = -105.81543146764064
+    Iteration 77, energy = -105.81627175984562
+    Iteration 78, energy = -105.81695792968344
+    Iteration 79, energy = -105.81752263387214
+    Iteration 80, energy = -105.81799160173874
+    Iteration 81, energy = -105.81838508535368
+    Iteration 82, energy = -105.818719015115
+    Iteration 83, energy = -105.81900591730428
+    Iteration 84, energy = -105.81925564043273
+    Iteration 85, energy = -105.81947592876408
+    Iteration 86, energy = -105.81967287421094
+    Iteration 87, energy = -105.81985127178436
+    Iteration 88, energy = -105.82001489879488
+    Iteration 89, energy = -105.82016673392603
+    Iteration 90, energy = -105.82030912899383
+    Iteration 91, energy = -105.82044394353889
+    Iteration 92, energy = -105.82057265026401
+    Iteration 93, energy = -105.82069641762584
+    Iteration 94, energy = -105.82081617454064
+    Iteration 95, energy = -105.82093266109534
+    Iteration 96, energy = -105.82104646831016
+    Iteration 97, energy = -105.82115806934105
+    Iteration 98, energy = -105.82126784398505
+    Iteration 99, energy = -105.82137609794717
+    Iteration 100, energy = -105.82148307800819
 
 
 ## Adding support for your own gates
 
-Natively, the only FLO gates that come already shipped with `Yao.jl` are gates of
-the form `kron(nq, i => σ1, i+1 => Z, ⋯, i-1 => Z, j => σ2)` and 
-`rot(kron(nq, i => σ1, i+1 => Z, ⋯, i-1 => Z, j => σ2), θ)` where `σ1, σ2 ∈ [X,Y]`. But there are many more FLO gates, one being for example the $FSWAP$ gates which swaps to qubits while making sure to preserve the fermionic commutation relations
+Natively, the only FLO gates that come already shipped with `Yao.jl` are the gates listed [here](#List-of-supported-gates). But there are many more FLO gates, one being for example the `FSWAP` gate which swaps to qubits while making sure to preserve the fermionic commutation relations
 
 
 ```julia
@@ -397,14 +422,15 @@ If a gate defines a matrix representation, as we just did for the `FSWAP`gate, `
 ```julia
 nq = 4
 fswap = put(nq, (1, 2) => FSWAP)
-mreg = MajoranaReg(nq, 1)
+mreg = MajoranaReg(nq)
+mreg |> put(nq, 2 => X)
 mreg |> fswap
 ```
 
-    ┌ Warning: Calling manual instruct!(MajoranaReg{Float64}(4, 1), ComplexF64[1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im -1.0 + 0.0im], (1, 2)).
+    ┌ Warning: Calling manual instruct!(MajoranaReg{Float64}(4), ComplexF64[1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im -1.0 + 0.0im], (1, 2)).
     │ You can greatly speed up your FLO gates by exactly implementing unsafe_apply!()
     │ and instruct!() for them. See FLOYao/src/instruct.jl for how to do that.
-    └ @ FLOYao /home/yc20910/PhD/Work/code/FLOYao/src/instruct.jl:49
+    └ @ FLOYao /home/yc20910/PhD/Work/code/FLOYao/src/instruct.jl:62
 
 
 
@@ -412,18 +438,18 @@ mreg |> fswap
 
     MajoranaReg{Float64} with 4 qubits:
     8×8 Matrix{Float64}:
-     -2.40901e-16  -2.94663e-16  -1.0           2.35127e-16  0.0  0.0  0.0  0.0
-      3.57633e-16  -4.32975e-16  -1.0529e-16   -1.0          0.0  0.0  0.0  0.0
-     -1.0           1.20422e-17   2.61492e-16  -2.81188e-16  0.0  0.0  0.0  0.0
-     -7.05281e-17  -1.0           2.65282e-16   3.00191e-16  0.0  0.0  0.0  0.0
-      0.0           0.0           0.0           0.0          1.0  0.0  0.0  0.0
-      0.0           0.0           0.0           0.0          0.0  1.0  0.0  0.0
-      0.0           0.0           0.0           0.0          0.0  0.0  1.0  0.0
-      0.0           0.0           0.0           0.0          0.0  0.0  0.0  1.0
+     -2.40901e-16  -2.94663e-16  -1.0          …   0.0   0.0   0.0   0.0
+      3.57633e-16  -4.32975e-16  -1.0529e-16       0.0   0.0   0.0   0.0
+     -1.0           1.20422e-17   2.61492e-16      0.0   0.0   0.0   0.0
+     -7.05281e-17  -1.0           2.65282e-16      0.0   0.0   0.0   0.0
+     -0.0          -0.0          -0.0             -1.0  -0.0  -0.0  -0.0
+     -0.0          -0.0          -0.0          …  -0.0  -1.0  -0.0  -0.0
+     -0.0          -0.0          -0.0             -0.0  -0.0  -1.0  -0.0
+     -0.0          -0.0          -0.0             -0.0  -0.0  -0.0  -1.0
 
 
 
-now before we fix these warnings, let's see how long the current implementation takes:
+Now, before we fix these warnings, let's see how long the current implementation takes:
 
 
 ```julia
@@ -435,20 +461,35 @@ using Suppressor # we don't want to get all the warnings when benchmarking
 
 
 
-    BenchmarkTools.Trial: 6960 samples with 1 evaluation.
-     Range (min … max):  639.587 μs …   4.007 ms  ┊ GC (min … max): 0.00% … 70.64%
-     Time  (median):     677.467 μs               ┊ GC (median):    0.00%
-     Time  (mean ± σ):   713.191 μs ± 217.746 μs  ┊ GC (mean ± σ):  2.39% ±  6.42%
+    BenchmarkTools.Trial: 7192 samples with 1 evaluation.
+     Range (min … max):  646.570 μs …   3.542 ms  ┊ GC (min … max): 0.00% … 71.01%
+     Time  (median):     658.311 μs               ┊ GC (median):    0.00%
+     Time  (mean ± σ):   690.038 μs ± 194.914 μs  ┊ GC (mean ± σ):  2.22% ±  6.28%
     
-      ▄▅▆▇█▇▅▅▄▃▂▂▂▁▁▁▁                                             ▂
-      █████████████████▆▇▆▆▆▆▅▅▅▅▆▄▅▄▅▅▄▄▄▇▆▆▆▇▆▅▆▄▅▄▅▅▅▅▅▅▄▄▆▅▄▆▃▄ █
-      640 μs        Histogram: log(frequency) by time       1.15 ms <
+      ▆█▆▄▃▃▂▁ ▁                                                    ▁
+      ██████████▇▇▇▇▅▇▇▇▅▅▆▅▄▄▄▄▄▄▆▅▅▄▄▅▇▇█▇▇▇▆▅▅▃▄▃▃▃▃▁▁▁▁▁▁▃▁▅▆▇▆ █
+      647 μs        Histogram: log(frequency) by time        1.1 ms <
     
-     Memory estimate: 339.34 KiB, allocs estimate: 501.
+     Memory estimate: 339.19 KiB, allocs estimate: 496.
 
 
 
 To find out what the matrix representation of the `FSWAP` gate in the Majorana basis is, it is easiest to retrace what is happening inside `instruct!(::MajoranaReg, ::AbstractMatrix, locs)`
+You can use
+
+
+```julia
+@which instruct!(mreg, mat(FSWAP), (1,2))
+```
+
+
+
+
+instruct!(reg::<b>MajoranaReg</b>, gate::<b>AbstractMatrix</b>, locs) in FLOYao at <a href="https://github.com/PhaseCraft/FLOYao.jl/tree/79ab50718cfa84dfdde4a4141af0d8beece24395//src/instruct.jl#L55" target="_blank">/home/yc20910/PhD/Work/code/FLOYao/src/instruct.jl:55</a>
+
+
+
+to find the location of the corresponding code. Now let's copy-paste what we found there:
 
 
 ```julia
@@ -508,13 +549,13 @@ end
 
 
     BenchmarkTools.Trial: 10000 samples with 709 evaluations.
-     Range (min … max):  175.340 ns …   3.170 μs  ┊ GC (min … max): 0.00% … 94.01%
-     Time  (median):     186.623 ns               ┊ GC (median):    0.00%
-     Time  (mean ± σ):   208.873 ns ± 179.849 ns  ┊ GC (mean ± σ):  7.50% ±  8.05%
+     Range (min … max):  170.410 ns …   2.536 μs  ┊ GC (min … max): 0.00% … 92.06%
+     Time  (median):     181.900 ns               ┊ GC (median):    0.00%
+     Time  (mean ± σ):   200.316 ns ± 151.778 ns  ┊ GC (mean ± σ):  6.67% ±  7.97%
     
-      ▃█▅▆▇▅▅▄▃▂▁▁▁                                                 ▂
-      ██████████████▇▆▆▄▆▅▅▅▄▄▅▄▃▄▁▄▁▁▁▃▁▃▃▁▃▄▁▁▁▁▁▅▇▇█▆█████▇█▇▆▅▅ █
-      175 ns        Histogram: log(frequency) by time        370 ns <
+       ▁▂█▆▅▆▆▄▃▂▁                                                  ▂
+      ▇████████████▇▇▆▅▅▄▃▄▁▄▄▁▅▁▃▁▄▃▁▁▁▄▃▃▄▄▄▃▃▃▃▃▄▁▃▄▃▃▅▄▄▇▇▇▇▆▅▅ █
+      170 ns        Histogram: log(frequency) by time        339 ns <
     
      Memory estimate: 512 bytes, allocs estimate: 4.
 
@@ -524,7 +565,7 @@ Now, that is quite a significant speedup!
 
 ## Background: Fermionic linear optics circuits
 
-This section is more here, to fix the convention of
+This section is here, more to fix the convention of
 [Jordan-Wigner transform](https://en.wikipedia.org/wiki/Jordan%E2%80%93Wigner_transformation)
 and [Majorana operators](https://en.wikipedia.org/wiki/Majorana_fermion) that we use here,
 and less to explain the full theory behind those. For the latter, we, once again, recommend [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010).
@@ -551,7 +592,12 @@ $$
 $$
 with $σ_i, σ_k ∈ \{X, Y\}$.
 
-If a unitary is of the form 
+Any unitary that takes all Majorana operators to a linear combination of Majorana operators
+under conjugation, i.e. that satisfies
+$$
+    U γ_i U^† = R_i^j γ_j
+$$
+with some $R ∈ O(2n)$ is a FLO unitary. In particular, if a unitary is of the form 
 $$
     U = e^{-iθH}
 $$
@@ -559,37 +605,29 @@ with
 $$
     H = \frac{i}{4} \sum_{i,j} H^{ij} γ_i γ_j
 $$
-it turns out that it takes Majorana operators to linear combinations of 
-Majorana operators under conjugation, i.e.
-$$
-    U γ_i U^† = R_i^j γ_j
-$$
-with some $R ∈ SO(2n)$. The action of FLO circuits on input states of the form 
-$$
-    |ψ_i⟩ = c_k^† ⋯ c_1^† |0 ⋯ 0⟩ =  γ_{2k-1} ⋯ γ_{2k-1} |0 ⋯ 0⟩
-$$
-can thus be efficiently classically simluated.
+it is a FLO unitary with even $R ∈ SO(2n)$.
 
-Furthermore, it is also fairly straightforward to compute expectation values since we can 
-evolve the Hamiltonian first in the Heisenber picture to
+But note, that not all FLO unitaries are of that form. For example $X_i$ is also a FLO 
+gate since it either commutes or anti-commutes with all Majorana operators, but the associated
+matrix $R$ always has determinant $-1$.
+
+Calculating the expectation values of hamiltonians like the one above when evolving the 
+vacuum state with FLO circuits is efficiently possible. First evolve the 
+Hamiltonian in the Heisenber picture to
 $$
     UHU^† = \frac{i}{4} R^{m}_{i} R^{n}_{j} H^{ij} γ_{m} γ_{n} 
            =: \frac{i}{4} \tilde H^{mn} γ_{m} γ_{n}.
 $$
-
-For the expectation value this makes then
+and then compute the expectation value
 $$
 \begin{aligned}
-    ⟨ψ|UHU^†|ψ⟩ &= \frac{i}{4} ∑_i \tilde H^{ii} ⟨Ω|γ_{1} ⋯ γ_{2k-1} γ_{i} γ_{i} γ_{2k-1} ⋯  γ_{1}|Ω⟩ \\
-                &= \frac{i}{2} ∑_{i ≤ k} \tilde H^{2i-1,2i} ⟨Ω| γ_{2i-1} γ_{2i-1} γ_{2i} γ_{2i-1}|Ω⟩
-                   + \frac{i}{2} ∑_{i > k} \tilde H^{2i-1,2i} ⟨Ω|γ_{2i-1} γ_{2i}|Ω⟩ \\
-                &= \frac{1}{2} ∑_{i ≤ k} \tilde H^{2i-1,2i} - \frac{1}{2} ∑_{i>k} \tilde H^{2i-1,2i} \\
-                &= \frac{1}{2} ∑_{i ≤ k} R^{2i-1}_{m} R^{2i}_{n} H^{mn} 
-                   - \frac{1}{2} ∑_{i>k} R^{2i-1}_{m} R^{2i}_{n} H^{mn} \\
-\end{aligned}
+    ⟨ψ|UHU^†|ψ⟩ &= \frac{i}{4} \tilde H^{mn} ⟨Ω|γ_{m} γ_{n}|Ω⟩ \\
+                &= - \frac{1}{2} ∑_{i} \tilde H^{2i-1,2i} \\
+                &= - \frac{1}{2} ∑_{i>k} R^{2i-1}_{m} R^{2i}_{n} H^{mn} \\
+\end{aligned}.
 $$
-where we used that the fermionic vacuum $|Ω⟩$ is the zero state.
-
+From the first to second line one needs to carefully think which of the 
+$⟨Ω|γ_{m} γ_{n}|Ω⟩$ are zero and which cancel each other out due to the anti-symmetry of $H^{mn}$.
 
 ## Known restrictions
 
@@ -599,7 +637,7 @@ Majorana operators. But in general, one can use [Wick's theorem](https://en.wiki
 $$
     ⟨ψ_i|O|ψ_i⟩
 $$
-where $|ψ_i⟩$ is a computational basis state and $O$ a string of Majorana operators and thus using linearity of the expectation value it is possible to efficiently calculate the expectation value of any observable that can be expanded in a sum of polynomially (in the number of qubits) many products of Majorana operators. (See also [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010) again for details). If you need expectation values of higher order (in the number of Majorana operators involved) observables, feel free to open a PR!
+where $|ψ_i⟩$ is a computational basis state and $O$ a string of Majorana operators and thus, using linearity of the expectation value, it is possible to efficiently calculate the expectation value of any observable that can be expanded in a sum of polynomially (in the number of qubits) many products of Majorana operators. (See also [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010) again for details). If you need expectation values of higher order (in the number of Majorana operators involved) observables, feel free to open a pull request!
 
 ### "Hidden" FLO circuits
 `Yao.jl` allows to express the same circuit in different forms. E.g. 
@@ -607,7 +645,7 @@ where $|ψ_i⟩$ is a computational basis state and $O$ a string of Majorana ope
     chain(nq, put(1 => X), put(2 => X))
 ```
 and
-```
+```julia
     kron(nq, 1 => X, 2 => X)
 ```
 represent the same FLO circuit, but only the latter will be recognised as such. Similarly 
