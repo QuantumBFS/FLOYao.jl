@@ -15,6 +15,7 @@ export MajoranaReg
 include("utils.jl")
 include("majorana_reg.jl")
 include("instruct.jl")
+include("apply_composite.jl")
 include("expect.jl")
 include("auto_diff.jl")
 

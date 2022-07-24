@@ -130,7 +130,7 @@ function paulibasis2majoranasquares(P::AbstractVector, locs=1:Int(log(4, length(
                 end
                 i = i >> 2
             end
-            secondmajorana == -1 && throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
+            firstmajorana == -1 && throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
             out[firstmajorana+1, secondmajorana+1] = -2 * real(coeff)
             out[secondmajorana+1, firstmajorana+1] =  2 * real(coeff)
         end
