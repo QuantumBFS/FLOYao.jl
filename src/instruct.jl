@@ -55,7 +55,8 @@ function Yao.instruct!(reg::MajoranaReg, gate::AbstractMatrix, locs)
     matlocs = (2*(locs[1]-1)+1:2(locs[end]))
     @warn """Calling manual instruct!($reg, $gate, $locs).
     You can greatly speed up your FLO gates by exactly implementing unsafe_apply!()
-    and instruct!() for them. See FLOYao/src/instruct.jl for how to do that.
+    and instruct!() for them. See FLOYao/src/instruct.jl and  FLOYao/src/apply_composite.jl
+    for how to do that.
     """
     reg.state[matlocs,:] .= W * reg.state[matlocs,:]
 end

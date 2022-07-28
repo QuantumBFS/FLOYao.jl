@@ -8,11 +8,11 @@ import FLOYao: majorana2arrayreg
 
 @testset "MajoranaRegister" begin
     nq = 2
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     areg |> kron(2, 1=>X, 2=>X)
     mreg |> kron(2, 1=>X, 2=>X)
@@ -22,7 +22,7 @@ end
 @testset "PutBlock" begin
     nq = 3
     θ = 0.4
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     xxg = kron(nq, 1 => X, 2 => X)
 
@@ -60,7 +60,7 @@ end
 @testset "KronBlock" begin
     nq = 3
     θ = 0.4
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     xxg = kron(nq, 1 => X, 2 => X)
     rg = rot(xxg, θ)
@@ -82,7 +82,7 @@ end
 @testset "RepeatedBlock" begin
     nq = 3
     θ = 0.4
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     xxg = kron(nq, 1 => X, 2 => X)
     rg = rot(xxg, θ)
@@ -122,7 +122,7 @@ end
     push!(circuit, rg)  
 
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     mreg |> put(nq, 2=>X)
     areg |> put(nq, 2=>X)
@@ -154,7 +154,7 @@ end
     push!(circuit, put(nq, 1=>Z))
 
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
-    mreg = MajoranaReg(nq)
+    mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     mreg |> put(nq, 1=>X)
     areg |> put(nq, 1=>X)
