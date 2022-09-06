@@ -735,13 +735,13 @@ $$
            =: \frac{i}{4} \tilde H^{mn} γ_{m} γ_{n}.
 $$
 and then compute the expectation value
-$$
+```math
 \begin{aligned}
     ⟨ψ|UHU^†|ψ⟩ &= \frac{i}{4} \tilde H^{mn} ⟨Ω|γ_{m} γ_{n}|Ω⟩ \\
                 &= - \frac{1}{2} ∑_{i} \tilde H^{2i-1,2i} \\
                 &= - \frac{1}{2} ∑_{i>k} R^{2i-1}_{m} R^{2i}_{n} H^{mn} \\
 \end{aligned}.
-$$
+```
 From the first to second line one needs to carefully think which of the 
 $⟨Ω|γ_{m} γ_{n}|Ω⟩$ are zero and which cancel each other out due to the anti-symmetry of $H^{mn}$.
 
