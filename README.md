@@ -365,9 +365,7 @@ If you want to add support to your own gates, read [this section](#Adding-suppor
 ## Example: VQE for the Transverse Field Ising model
 
 For a more realistic use case, we have a look at VQE for the Transverse Field Ising model on a line whose Hamiltonian is given as 
-$$
-    H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.
-$$
+$$H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.$$
 As Ansatz circuits we use the Hamiltonian Variational Ansatz
 $$
     U(\vec θ) = ∏_i^p e^{-iθ_{i,U} U} e^{-iθ_{i,T} T} 
