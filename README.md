@@ -2,6 +2,14 @@
 
 A backend to efficiently simulate fermionic linear optics (FLO) circuits in [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
 and [Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
+FLO circuits are a class of quantum circuits that are closely related to
+non-interacting fermions and can be efficiently simulated on classical
+computers, similar to the way Clifford circuits can be efficiently classically
+simulated, as is done in
+[YaoClifford.jl](https://github.com/QuantumBFS/YaoClifford.jl). A quick
+introduction to fermionic linear optics circuits is found in
+[the Background section](#Background-Fermionic-linear-optics-circuits) and a more in-depth
+introduction in e.g. the two papers linked above.
 
 **Note**    
 The markdown version of this README is automatically generated from `README.ipynb` and some 
@@ -11,9 +19,9 @@ of the hpyerlinks and math doesn't seem to play that well with githubs markdown 
  - [Installation](#Installation)
  - [Basic usage](#Basic-usage)
  - [List of supported gates](#List-of-supported-gates)
- - [Example: Transverse field Ising model](#Example:-Transverse-Field-Ising-model)
+ - [Example: Transverse field Ising model](#Example-Transverse-Field-Ising-model)
  - [Adding support for your own gates](#Adding-support-for-your-own-gates)
- - [Background: Fermionic linear optics circuits](#Background:-Fermionic-linear-optics-circuits)
+ - [Background: Fermionic linear optics circuits](#Background-Fermionic-linear-optics-circuits)
  - [Known restrictions](#Known-restrictions)
 
 ## Installation
