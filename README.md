@@ -19,7 +19,7 @@ of the hpyerlinks and math doesn't seem to play that well with githubs markdown 
  - [Installation](#Installation)
  - [Basic usage](#Basic-usage)
  - [List of supported gates](#List-of-supported-gates)
- - [Example: Transverse field Ising model](#Example-Transverse-Field-Ising-model)
+ - [Example: Transverse field Ising model](#Example-VQE-for-Transverse-Field-Ising-model)
  - [Adding support for your own gates](#Adding-support-for-your-own-gates)
  - [Background: Fermionic linear optics circuits](#Background-Fermionic-linear-optics-circuits)
  - [Known restrictions](#Known-restrictions)
