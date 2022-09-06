@@ -690,7 +690,7 @@ This implies the normal fermionic creation and annihilation operators are given 
 ```
 and products of two Majorana operators are of the form
 ```math
-    σ_i ( ∏_{i<j<k} Z_k ) σ_k
+    σ_i \left( Z_k \right) σ_k
     \quad \textrm{or} \quad
     Z_i
 ```
