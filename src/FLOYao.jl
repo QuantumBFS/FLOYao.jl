@@ -9,6 +9,7 @@ module FLOYao
 using LinearAlgebra
 using Yao
 using SparseArrays
+using Random
 
 export MajoranaReg
 
@@ -17,6 +18,7 @@ include("majorana_reg.jl")
 include("instruct.jl")
 include("apply_composite.jl")
 include("expect.jl")
+include("measure.jl")
 include("auto_diff.jl")
 
 end # module

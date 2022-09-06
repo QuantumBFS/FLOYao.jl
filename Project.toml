@@ -8,6 +8,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoGatesExtra = "b0df5df4-e683-4495-80ab-3239a81ebd4f"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 julia = "1"
