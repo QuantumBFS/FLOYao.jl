@@ -299,9 +299,6 @@ println("-----------------------------")
 ```
 
     Comparing the full countmaps:
-    
-
-
 
     Dict{DitStr{2, 4, BigInt}, Int64} with 4 entries:
       0000 ₍₂₎ => 9276
@@ -309,21 +306,14 @@ println("-----------------------------")
       1001 ₍₂₎ => 18
       0011 ₍₂₎ => 345
 
-
-
     Dict{DitStr{2, 4, Int64}, Int64} with 4 entries:
       0000 ₍₂₎ => 9276
       1010 ₍₂₎ => 359
       1001 ₍₂₎ => 9
       0011 ₍₂₎ => 356
-
-
     -----------------------------
     
     Comparing the countmaps on only a subset of qubits
-    
-
-
 
     Dict{DitStr{2, 3, BigInt}, Int64} with 4 entries:
       000 ₍₂₎ => 9273
@@ -331,15 +321,11 @@ println("-----------------------------")
       011 ₍₂₎ => 343
       001 ₍₂₎ => 369
 
-
-
     Dict{DitStr{2, 3, Int64}, Int64} with 4 entries:
       000 ₍₂₎ => 9274
       010 ₍₂₎ => 15
       011 ₍₂₎ => 363
       001 ₍₂₎ => 348
-
-
     -----------------------------
 
 
