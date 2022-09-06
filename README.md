@@ -251,7 +251,7 @@ Just to check that this is all consistent with running a full wavefunction simul
 ```julia
 areg = zero_state(nq)
 expval_full = expect(hamiltonian, areg => circuit)
-expval_full ≈ expval
+isapprox(expval_full, expval)
 ```
 
 
@@ -264,7 +264,7 @@ expval_full ≈ expval
 
 ```julia
 inδ_full, paramsδ_full = expect'(hamiltonian, areg => circuit)
-paramsδ ≈ paramsδ_full
+isapprox(paramsδ, paramsδ_full)
 ```
 
 
@@ -365,11 +365,13 @@ If you want to add support to your own gates, read [this section](#Adding-suppor
 ## Example: VQE for the Transverse Field Ising model
 
 For a more realistic use case, we have a look at VQE for the Transverse Field Ising model on a line whose Hamiltonian is given as 
-$$H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.$$
+```math
+    H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.
+```
 As Ansatz circuits we use the Hamiltonian Variational Ansatz
-$$
+```math
     U(\vec θ) = ∏_i^p e^{-iθ_{i,U} U} e^{-iθ_{i,T} T} 
-$$
+```
 with the initial state being the groundstate of the TFIM at $J = 0$, so $|ψ_i⟩ = |0⋯0⟩$
 
 
@@ -401,7 +403,7 @@ end
 nparams = nparameters(circuit)
 dispatch!(circuit, rand(nparams) ./ 100)
 
-ψ_i = FLOYao.zero_state(L);
+reg = FLOYao.zero_state(L);
 ```
 
 now that we defined the hamiltonian, the ansatz circuit and the initial state we can perform
@@ -414,9 +416,9 @@ iterations = 100
 γ = 2e-2
 
 for i in 1:iterations
-    _, grad = expect'(hamiltonian, ψ_i => circuit)
+    _, grad = expect'(hamiltonian, reg => circuit)
     dispatch!(-, circuit, γ * grad)
-    println("Iteration $i, energy = $(expect(hamiltonian, ψ_i => circuit))")
+    println("Iteration $i, energy = $(expect(hamiltonian, reg => circuit))")
 end
 ```
 
@@ -646,12 +648,12 @@ end
 
 function Yao.instruct!(reg::MajoranaReg, ::Val{:FSWAP}, locs::Tuple)
     i1, i2 = locs
-    ψ1, ψ2 = reg.state[2i1-1,:], reg.state[2i1,:]
-    ψ3, ψ4 = reg.state[2i2-1,:], reg.state[2i2,:]
-    reg.state[2i1-1,:] .=  .-ψ3
-    reg.state[2i1,:] .=  .-ψ4
-    reg.state[2i2-1,:] .=  .-ψ1
-    reg.state[2i2,:] .=  .-ψ2
+    row1, row2 = reg.state[2i1-1,:], reg.state[2i1,:]
+    row3, row4 = reg.state[2i2-1,:], reg.state[2i2,:]
+    reg.state[2i1-1,:] .=  .-row3
+    reg.state[2i1,:] .=  .-row4
+    reg.state[2i2-1,:] .=  .-row1
+    reg.state[2i2,:] .=  .-row2
     return reg
 end
 ```
@@ -687,40 +689,40 @@ and [Majorana operators](https://en.wikipedia.org/wiki/Majorana_fermion) that we
 and less to explain the full theory behind those. For the latter, we, once again, recommend [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010).
 
 We define the Majorana operators $γ_i$ via 
-$$
+```math
     γ_{2i-1} = ∏_{j=1}^{i-1} (-Z_j) X_i
-$$
+```
 and
-$$
+```math
     γ_{2i} = ∏_{j=1}^{i-1} (-Z_j) Y_i.
-$$
+```
 This implies the normal fermionic creation and annihilation operators are given by
-$$
+```math
     c_j = \frac{1}{2} (γ_{2j-1} + iγ_{2j})
     \quad \textrm{and} \quad
     c_j^† = \frac{1}{2} (γ_{2j-1} - iγ_{2j})
-$$
+```
 and products of two Majorana operators are of the form
-$$
+```math
     σ_i \left(∏_{i<j<k} Z_k \right) σ_k
     \quad \textrm{or} \quad
     Z_i
-$$
+```
 with $σ_i, σ_k ∈ \{X, Y\}$.
 
 Any unitary that takes all Majorana operators to a linear combination of Majorana operators
 under conjugation, i.e. that satisfies
-$$
+```math
     U γ_i U^† = R_i^j γ_j
-$$
+```
 with some $R ∈ O(2n)$ is a FLO unitary. In particular, if a unitary is of the form 
-$$
+```math
     U = e^{-iθH}
-$$
+```
 with 
-$$
+```math
     H = \frac{i}{4} \sum_{i,j} H^{ij} γ_i γ_j
-$$
+```
 it is a FLO unitary with even $R ∈ SO(2n)$.
 
 But note, that not all FLO unitaries are of that form. For example $X_i$ is also a FLO 
@@ -730,10 +732,10 @@ matrix $R$ always has determinant $-1$.
 Calculating the expectation values of hamiltonians like the one above when evolving the 
 vacuum state with FLO circuits is efficiently possible. First evolve the 
 Hamiltonian in the Heisenber picture to
-$$
+```math
     UHU^† = \frac{i}{4} R^{m}_{i} R^{n}_{j} H^{ij} γ_{m} γ_{n} 
            =: \frac{i}{4} \tilde H^{mn} γ_{m} γ_{n}.
-$$
+```
 and then compute the expectation value
 ```math
 \begin{aligned}
@@ -750,9 +752,9 @@ $⟨Ω|γ_{m} γ_{n}|Ω⟩$ are zero and which cancel each other out due to the 
 ###  Expectation values of higher order observables
 So far, `FLOYao` only supports expectation values of observables that are sums of squares of 
 Majorana operators. But in general, one can use [Wick's theorem](https://en.wikipedia.org/wiki/Wick%27s_theorem) to calculate the expectation values of expressions of the form 
-$$
+```math
     ⟨ψ_i|O|ψ_i⟩
-$$
+```
 where $|ψ_i⟩$ is a computational basis state and $O$ a string of Majorana operators and thus, using linearity of the expectation value, it is possible to efficiently calculate the expectation value of any observable that can be expanded in a sum of polynomially (in the number of qubits) many products of Majorana operators. (See also [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010) again for details). If you need expectation values of higher order (in the number of Majorana operators involved) observables, feel free to open a pull request!
 
 ### "Hidden" FLO circuits
