@@ -18,6 +18,7 @@ mutable struct MajoranaReg{T<:Real} <: AbstractRegister{2}
 end
 
 
+MajoranaReg(::Type{T}, n::Integer) where {T} = MajoranaReg(Matrix{T}(undef, 2n, 2n))
 MajoranaReg(n::Integer) = MajoranaReg(Float64, n)
 Yao.nqubits(reg::MajoranaReg) = size(reg.state, 1) ÷ 2
 Yao.nqudits(reg::MajoranaReg) = size(reg.state, 1) ÷ 2
@@ -91,6 +92,22 @@ function zero_state_like(reg::AbstractRegister)
     return zero_state(real(datatype(reg)), nqubits(reg))
 end
 
+
+"""
+    product_state!(reg::MajoranaReg, bit_str::BitStr)
+
+Put `reg` into the product state described by `bit_str`
+"""
+function product_state!(reg::MajoranaReg, bit_str::DitStr{2,N,IT}) where {N,IT}
+    zero_state!(reg)
+    for (qb, bit) in enumerate(bit_str)
+        if Bool(bit)
+            reg |> put(N, qb => X)
+        end
+    end
+    return reg
+end
+
 """
     product_state([T=Float64,] bit_str)
 
@@ -98,12 +115,8 @@ A Majorana register in the computational basis state specified by the
 `bit_str`.
 """
 function product_state(::Type{T}, bit_str::DitStr{2,N,IT}) where {N,T,IT}
-    reg = zero_state(T, N)
-    for (qb, bit) in enumerate(bit_str)
-        if Bool(bit)
-            reg |> put(N, qb => X)
-        end
-    end
+    reg = MajoranaReg(T, N)
+    product_state!(reg, bit_str)
     return reg
 end
 
