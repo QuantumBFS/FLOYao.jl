@@ -223,7 +223,7 @@ end
 kron2majoranaindices(k::PutBlock{2,1,ZGate}) = (2k.locs[1]-1, 2k.locs[1])
 
 """
-    yaoham2majoranasquares(::Type{t}=Float64, yaoham::AbstracBlock{2})
+    yaoham2majoranasquares(::Type{T}=Float64, yaoham::AbstracBlock{2})
 
 Convert a hamiltonian written as a YaoBlock into the corresponding 
 2n×2n majorana hamiltonian.
@@ -266,6 +266,10 @@ function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T
     ham[i1,i2] = 2
     ham[i2,i1] = -2
     return ham
+end
+
+function yaoham2majoranasquares(::Type{T}, yaoham::Scale) where {T<:Real}
+    return yaoham.alpha * yaoham2majoranasquares(T, yaoham.content)
 end
 
 yaoham2majoranasquares(yaoham) = yaoham2majoranasquares(Float64, yaoham)

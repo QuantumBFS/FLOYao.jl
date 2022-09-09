@@ -25,8 +25,11 @@ function majorana_expect(block::AbstractMatrix, locs, reg::MajoranaReg)
     return (- expval - offset_expval) / 4
 end
 
-function Yao.expect(op::AbstractAdd, reg::MajoranaReg)
-    YaoBlocks._check_size(reg, op)
-    majoranaham = yaoham2majoranasquares(eltype(reg), op)
-    return majorana_expect(majoranaham, 1:nqubits(reg), reg)
+
+for BT in [:AbstractAdd, :Scale]
+    @eval function Yao.expect(op::$BT, reg::MajoranaReg)
+        YaoBlocks._check_size(reg, op)
+        majoranaham = yaoham2majoranasquares(eltype(reg), op)
+        return majorana_expect(majoranaham, 1:nqubits(reg), reg)
+    end
 end
