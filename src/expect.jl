@@ -25,7 +25,7 @@ function majorana_expect(block::AbstractMatrix, locs, reg::MajoranaReg)
     return (- expval - offset_expval) / 4
 end
 
-for BT in [:AbstractAdd, :Scale, :(KronBlock{2}), :(PutBlock{2,1,ZGate})]
+for BT in [:AbstractAdd, :(KronBlock{2}), :(PutBlock{2,1,ZGate})]
     @eval function Yao.expect(op::$BT, reg::MajoranaReg)
         YaoBlocks._check_size(reg, op)
         majoranaham = yaoham2majoranasquares(eltype(reg), op)

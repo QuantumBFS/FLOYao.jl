@@ -1,12 +1,11 @@
 name = "FLOYao"
 uuid = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
 authors = ["janlukas.bosse <janlukas.bosse@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
-YaoGatesExtra = "b0df5df4-e683-4495-80ab-3239a81ebd4f"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
