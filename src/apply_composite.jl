@@ -63,7 +63,7 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::KronBlock)
         reg.state .= backup
         # locs = sort!(collect(Iterators.flatten(k.locs)))
         locs = collect(Iterators.flatten(k.locs))
-        instruct!(reg, reducedmat(k.content), locs)
+        instruct!(reg, reducedmat(k), locs)
     end
     return reg
 end

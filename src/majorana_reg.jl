@@ -141,7 +141,7 @@ Put `reg` into the all ones state
 function one_state!(reg::MajoranaReg{T}) where {T}
     fill!(reg.state, zero(T))
     for (i, j) in enumerate(diagind(reg.state))
-        reg.state[j] = (i % 4 == 1 ||  i % 4 == 4) ? one(T) : -one(T)
+        reg.state[j] = (i % 4 == 1 ||  i % 4 == 0) ? one(T) : -one(T)
     end
     return reg
 end

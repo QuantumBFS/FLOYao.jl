@@ -2,10 +2,11 @@ using Yao
 using Test
 using FLOYao
 using StatsBase
-import FLOYao: majorana2arrayreg
+import FLOYao: majorana2arrayreg, NonFLOException
 
 @const_gate TestGate::ComplexF64 = [1 0 ; 0 exp(-1im*π/5)]
 @const_gate FSWAP::ComplexF64 = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 -1]
+@const_gate ManualX::ComplexF64 = [0 1; 1 0]
 
 @testset "MajoranaRegister" begin
     nq = 2
@@ -13,9 +14,17 @@ import FLOYao: majorana2arrayreg
     areg = zero_state(nq)
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 
+    FLOYao.one_state!(mreg)
+    areg = product_state(bit"11")
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
     mreg = FLOYao.product_state(bit"10101")
     areg = product_state(bit"10101")
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    mreg2 = FLOYao.product_state(bit"11111")
+    FLOYao.one_state!(mreg)
+    @test fidelity(mreg, mreg2) ≈ 1.
 end
 
 @testset "PutBlock" begin
@@ -54,6 +63,21 @@ end
     mreg |> yg
     areg |> yg
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    tg = put(nq, 2 => T)
+    mreg |> tg
+    areg |> tg
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    tdg = put(nq, 2 => T')
+    mreg |> tdg
+    areg |> tdg
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    rx = put(nq, 2 => Rx(0.1))
+    ry = put(nq, 1 => Ry(0.1))
+    @test_throws NonFLOException mreg |> rx
+    @test_throws NonFLOException mreg |> ry
 end
 
 @testset "KronBlock" begin
@@ -75,6 +99,11 @@ end
     kb = kron(nq, 2 => Rz(0.4), 3 => shift(1.))
     mreg |> kb
     areg |> kb
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    xx = kron(nq, 1 => ManualX, 2 => ManualX)
+    @test_warn "Calling manual instruct!" mreg |> xx
+    areg |> xx
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 end
 
@@ -226,6 +255,15 @@ end
     testreg = copy(mreg)
     res = measure!(testreg)
     @test fidelity(testreg, FLOYao.product_state(res)) ≈ 1.
+
+    testreg = copy(mreg)
+    res = measure!(NoPostProcess(), testreg)
+    @test fidelity(testreg, FLOYao.product_state(res)) ≈ 1.
+
+    testreg = copy(mreg)
+    bits = bit"1100"
+    res = measure!(ResetTo(bits), testreg)
+    @test fidelity(testreg, FLOYao.product_state(bits)) ≈ 1.
 
     mprobs = [FLOYao.bitstring_probability(mreg, BitStr{nq}(b)) for b in 0:2^nq-1]
     aprobs = abs2.(areg.state)
