@@ -2,14 +2,10 @@
 
 A backend to efficiently simulate fermionic linear optics (FLO) circuits in [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
 and [Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
-FLO circuits are a class of quantum circuits that are closely related to
-non-interacting fermions and can be efficiently simulated on classical
-computers, similar to the way Clifford circuits can be efficiently classically
-simulated, as is done in
-[YaoClifford.jl](https://github.com/QuantumBFS/YaoClifford.jl). A quick
-introduction to fermionic linear optics circuits is found in
-[the Background section](#Background-Fermionic-linear-optics-circuits) and a more in-depth
-introduction in e.g. the two papers linked above.
+FLO circuits are a class of quantum circuits that are closely related to non-interacting fermions 
+and can be efficiently simulated on classical computers, similar to the way Clifford circuits
+can be efficiently classically simulated, as is done in [YaoClifford.jl](https://github.com/QuantumBFS/YaoClifford.jl).
+A quick introduction to fermionic linear optics circuits is found in [the Background section](#Background-Fermionic-linear-optics-circuits) and a more in-depth introduction in e.g. the two papers linked above.
 
 **Note**    
 The markdown version of this README is automatically generated from `README.ipynb` and some 
@@ -45,7 +41,7 @@ which should make `FLOYao.jl` discoverable for your standard julia installation.
 Under linux the standard folder for julia packages under development is `/home/username/.julia/dev`
 
 ## Basic usage
-The heart of `FLOYao` is the `MajoranaReg` register type, which efficiently represents a state that is a [FLO unitary](#Background:-Fermionic-linear-optics-circuits) applied to the vacuum state $|0⋯0⟩$
+The heart of `FLOYao` is the `MajoranaReg` register type, which efficiently represents a state that is a [FLO unitary](#Background-Fermionic-linear-optics-circuits) applied to the vacuum state $|0⋯0⟩$
 
 First import `Yao` and `FLOYao`:
 
@@ -54,7 +50,7 @@ First import `Yao` and `FLOYao`:
 using Yao, FLOYao
 ```
 
-then build a (here somewhat arbitrary) circuit consisting only of [FLO gates](#Background:-Fermionic-linear-optics-circuits)
+then build a (here somewhat arbitrary) circuit consisting only of [FLO gates](#Background-Fermionic-linear-optics-circuits)
 
 
 ```julia
@@ -200,7 +196,7 @@ or even gradients of these expectation values with respect to the circuit parame
 
 
 ```julia
-inδ, paramsδ = expect'(hamiltonian, mreg => circuit)
+state_grad, params_grad = expect'(hamiltonian, mreg => circuit)
 ```
 
 
@@ -271,8 +267,8 @@ isapprox(expval_full, expval)
 
 
 ```julia
-inδ_full, paramsδ_full = expect'(hamiltonian, areg => circuit)
-isapprox(paramsδ, paramsδ_full)
+state_grad_full, params_grad_full = expect'(hamiltonian, areg => circuit)
+isapprox(params_grad, params_grad_full)
 ```
 
 
@@ -307,33 +303,47 @@ println("-----------------------------")
 ```
 
     Comparing the full countmaps:
+    
+
+
 
     Dict{DitStr{2, 4, BigInt}, Int64} with 4 entries:
-      0000 ₍₂₎ => 9276
-      1010 ₍₂₎ => 361
-      1001 ₍₂₎ => 18
-      0011 ₍₂₎ => 345
+      0000 ₍₂₎ => 9254
+      1010 ₍₂₎ => 374
+      1001 ₍₂₎ => 9
+      0011 ₍₂₎ => 363
+
+
 
     Dict{DitStr{2, 4, Int64}, Int64} with 4 entries:
-      0000 ₍₂₎ => 9276
-      1010 ₍₂₎ => 359
-      1001 ₍₂₎ => 9
-      0011 ₍₂₎ => 356
+      0000 ₍₂₎ => 9281
+      1010 ₍₂₎ => 351
+      1001 ₍₂₎ => 8
+      0011 ₍₂₎ => 360
+
+
     -----------------------------
     
     Comparing the countmaps on only a subset of qubits
+    
+
+
 
     Dict{DitStr{2, 3, BigInt}, Int64} with 4 entries:
-      000 ₍₂₎ => 9273
-      010 ₍₂₎ => 15
-      011 ₍₂₎ => 343
-      001 ₍₂₎ => 369
+      000 ₍₂₎ => 9265
+      010 ₍₂₎ => 6
+      011 ₍₂₎ => 351
+      001 ₍₂₎ => 378
+
+
 
     Dict{DitStr{2, 3, Int64}, Int64} with 4 entries:
-      000 ₍₂₎ => 9274
-      010 ₍₂₎ => 15
-      011 ₍₂₎ => 363
-      001 ₍₂₎ => 348
+      000 ₍₂₎ => 9255
+      010 ₍₂₎ => 8
+      011 ₍₂₎ => 384
+      001 ₍₂₎ => 353
+
+
     -----------------------------
 
 
@@ -407,115 +417,115 @@ groundstate of $H$:
 
 ```julia
 iterations = 100
-γ = 2e-2
+gamma = 2e-2
 
 for i in 1:iterations
     _, grad = expect'(hamiltonian, reg => circuit)
-    dispatch!(-, circuit, γ * grad)
+    dispatch!(-, circuit, gamma * grad)
     println("Iteration $i, energy = $(expect(hamiltonian, reg => circuit))")
 end
 ```
 
-    Iteration 1, energy = -99.94539903107294
-    Iteration 2, energy = -100.05435457339475
-    Iteration 3, energy = -100.10909645468709
-    Iteration 4, energy = -100.17995388555624
-    Iteration 5, energy = -100.29171904099248
-    Iteration 6, energy = -100.47220887850493
-    Iteration 7, energy = -100.76428954038174
-    Iteration 8, energy = -101.23517861649259
-    Iteration 9, energy = -101.98742997795534
-    Iteration 10, energy = -103.1696015011177
-    Iteration 11, energy = -104.97820918341799
-    Iteration 12, energy = -107.63269450982706
-    Iteration 13, energy = -111.29824952351869
-    Iteration 14, energy = -115.95044996473993
-    Iteration 15, energy = -121.24559138998656
-    Iteration 16, energy = -126.53854397808638
-    Iteration 17, energy = -131.13147536052566
-    Iteration 18, energy = -134.6014550985459
-    Iteration 19, energy = -136.93030091440178
-    Iteration 20, energy = -138.37167284536923
-    Iteration 21, energy = -139.23738100518304
-    Iteration 22, energy = -139.7669229470222
-    Iteration 23, energy = -140.10252445074727
-    Iteration 24, energy = -140.3183531143311
-    Iteration 25, energy = -140.45559906861777
-    Iteration 26, energy = -140.54217184645134
-    Iteration 27, energy = -140.5984013873836
-    Iteration 28, energy = -140.6379056962986
-    Iteration 29, energy = -140.66876293092122
-    Iteration 30, energy = -140.69530934316288
-    Iteration 31, energy = -140.71972222959687
-    Iteration 32, energy = -140.7430552087384
-    Iteration 33, energy = -140.76581206917365
-    Iteration 34, energy = -140.78823616608892
-    Iteration 35, energy = -140.81044884824954
-    Iteration 36, energy = -140.83251393846666
-    Iteration 37, energy = -140.8544675259937
-    Iteration 38, energy = -140.87633182073378
-    Iteration 39, energy = -140.89812172304661
-    Iteration 40, energy = -140.91984804138892
-    Iteration 41, energy = -140.9415191396324
-    Iteration 42, energy = -140.96314182749603
-    Iteration 43, energy = -140.9847218716837
-    Iteration 44, energy = -141.0062643075656
-    Iteration 45, energy = -141.02777364009404
-    Iteration 46, energy = -141.04925397961404
-    Iteration 47, energy = -141.07070913726895
-    Iteration 48, energy = -141.09214269409438
-    Iteration 49, energy = -141.11355805226577
-    Iteration 50, energy = -141.1349584738442
-    Iteration 51, energy = -141.15634711053906
-    Iteration 52, energy = -141.17772702688384
-    Iteration 53, energy = -141.19910121851333
-    Iteration 54, energy = -141.22047262675102
-    Iteration 55, energy = -141.2418441503938
-    Iteration 56, energy = -141.2632186553526
-    Iteration 57, energy = -141.28459898264373
-    Iteration 58, energy = -141.30598795510855
-    Iteration 59, energy = -141.32738838314748
-    Iteration 60, energy = -141.34880306969114
-    Iteration 61, energy = -141.3702348145796
-    Iteration 62, energy = -141.391686418485
-    Iteration 63, energy = -141.41316068647978
-    Iteration 64, energy = -141.43466043133293
-    Iteration 65, energy = -141.45618847660023
-    Iteration 66, energy = -141.4777476595568
-    Iteration 67, energy = -141.49934083401257
-    Iteration 68, energy = -141.5209708730434
-    Iteration 69, energy = -141.54264067166105
-    Iteration 70, energy = -141.56435314944287
-    Iteration 71, energy = -141.58611125313683
-    Iteration 72, energy = -141.60791795925388
-    Iteration 73, energy = -141.6297762766571
-    Iteration 74, energy = -141.6516892491563
-    Iteration 75, energy = -141.67365995811414
-    Iteration 76, energy = -141.69569152506713
-    Iteration 77, energy = -141.71778711436693
-    Iteration 78, energy = -141.73994993584452
-    Iteration 79, energy = -141.76218324749823
-    Iteration 80, energy = -141.78449035820972
-    Iteration 81, energy = -141.80687463048733
-    Iteration 82, energy = -141.82933948323847
-    Iteration 83, energy = -141.85188839457305
-    Iteration 84, energy = -141.87452490463667
-    Iteration 85, energy = -141.89725261847698
-    Iteration 86, energy = -141.9200752089413
-    Iteration 87, energy = -141.94299641960754
-    Iteration 88, energy = -141.9660200677507
-    Iteration 89, energy = -141.98915004734292
-    Iteration 90, energy = -142.0123903320908
-    Iteration 91, energy = -142.03574497851153
-    Iteration 92, energy = -142.05921812904745
-    Iteration 93, energy = -142.0828140152241
-    Iteration 94, energy = -142.10653696085234
-    Iteration 95, energy = -142.13039138527822
-    Iteration 96, energy = -142.15438180668437
-    Iteration 97, energy = -142.17851284544648
-    Iteration 98, energy = -142.20278922754977
-    Iteration 99, energy = -142.22721578807068
-    Iteration 100, energy = -142.25179747472944
+    Iteration 1, energy = -99.94604702662478
+    Iteration 2, energy = -100.0552760139687
+    Iteration 3, energy = -100.10983795313948
+    Iteration 4, energy = -100.18010191042188
+    Iteration 5, energy = -100.29072149806038
+    Iteration 6, energy = -100.46919343174095
+    Iteration 7, energy = -100.75784411316586
+    Iteration 8, energy = -101.22306314173035
+    Iteration 9, energy = -101.96623861794299
+    Iteration 10, energy = -103.1344992397859
+    Iteration 11, energy = -104.92303865727388
+    Iteration 12, energy = -107.55087520439476
+    Iteration 13, energy = -111.18474348327157
+    Iteration 14, energy = -115.80511191891739
+    Iteration 15, energy = -121.07990574706237
+    Iteration 16, energy = -126.38641871274655
+    Iteration 17, energy = -131.04993314856728
+    Iteration 18, energy = -134.64313674414555
+    Iteration 19, energy = -137.10704748248926
+    Iteration 20, energy = -138.64584501999235
+    Iteration 21, energy = -139.54355427264633
+    Iteration 22, energy = -140.04327042128475
+    Iteration 23, energy = -140.3135641698775
+    Iteration 24, energy = -140.45927755783316
+    Iteration 25, energy = -140.5409848778761
+    Iteration 26, energy = -140.59135311728866
+    Iteration 27, energy = -140.62689835339833
+    Iteration 28, energy = -140.65554929262655
+    Iteration 29, energy = -140.68098180134237
+    Iteration 30, energy = -140.70487007871046
+    Iteration 31, energy = -140.72797559232163
+    Iteration 32, energy = -140.75065004175642
+    Iteration 33, energy = -140.77306149728267
+    Iteration 34, energy = -140.79529482265127
+    Iteration 35, energy = -140.8173962400733
+    Iteration 36, energy = -140.83939330548515
+    Iteration 37, energy = -140.8613040523713
+    Iteration 38, energy = -140.88314131906367
+    Iteration 39, energy = -140.9049148940364
+    Iteration 40, energy = -140.92663264388005
+    Iteration 41, energy = -140.94830114761638
+    Iteration 42, energy = -140.96992607886017
+    Iteration 43, energy = -140.99151245116155
+    Iteration 44, energy = -141.01306478414602
+    Iteration 45, energy = -141.03458722082786
+    Iteration 46, energy = -141.05608361310286
+    Iteration 47, energy = -141.07755758553577
+    Iteration 48, energy = -141.0990125838095
+    Iteration 49, energy = -141.12045191204618
+    Iteration 50, energy = -141.14187876189268
+    Iteration 51, energy = -141.16329623542646
+    Iteration 52, energy = -141.18470736337085
+    Iteration 53, energy = -141.20611511972243
+    Iteration 54, energy = -141.22752243361975
+    Iteration 55, energy = -141.24893219907625
+    Iteration 56, energy = -141.27034728305827
+    Iteration 57, energy = -141.2917705322766
+    Iteration 58, energy = -141.31320477897444
+    Iteration 59, energy = -141.33465284593566
+    Iteration 60, energy = -141.35611755088493
+    Iteration 61, energy = -141.3776017104144
+    Iteration 62, energy = -141.3991081435449
+    Iteration 63, energy = -141.42063967500297
+    Iteration 64, energy = -141.44219913828206
+    Iteration 65, energy = -141.46378937853845
+    Iteration 66, energy = -141.48541325536291
+    Iteration 67, energy = -141.5070736454618
+    Iteration 68, energy = -141.5287734452738
+    Iteration 69, energy = -141.55051557354042
+    Iteration 70, energy = -141.57230297384973
+    Iteration 71, energy = -141.594138617164
+    Iteration 72, energy = -141.6160255043431
+    Iteration 73, energy = -141.63796666867043
+    Iteration 74, energy = -141.65996517838866
+    Iteration 75, energy = -141.68202413925079
+    Iteration 76, energy = -141.70414669708873
+    Iteration 77, energy = -141.72633604040612
+    Iteration 78, energy = -141.74859540299275
+    Iteration 79, energy = -141.7709280665683
+    Iteration 80, energy = -141.79333736345208
+    Iteration 81, energy = -141.81582667926338
+    Iteration 82, energy = -141.83839945565157
+    Iteration 83, energy = -141.86105919305817
+    Iteration 84, energy = -141.8838094535107
+    Iteration 85, energy = -141.90665386344972
+    Iteration 86, energy = -141.92959611659015
+    Iteration 87, energy = -141.9526399768174
+    Iteration 88, energy = -141.97578928111952
+    Iteration 89, energy = -141.99904794255747
+    Iteration 90, energy = -142.02241995327395
+    Iteration 91, energy = -142.0459093875434
+    Iteration 92, energy = -142.06952040486624
+    Iteration 93, energy = -142.09325725310808
+    Iteration 94, energy = -142.1171242716888
+    Iteration 95, energy = -142.14112589482409
+    Iteration 96, energy = -142.16526665482448
+    Iteration 97, energy = -142.189551185456
+    Iteration 98, energy = -142.21398422536802
+    Iteration 99, energy = -142.23857062159442
+    Iteration 100, energy = -142.26331533313498
 
 
 ## Adding support for your own gates
@@ -573,14 +583,14 @@ using Suppressor # we don't want to get all the warnings when benchmarking
 
 
 
-    BenchmarkTools.Trial: 6254 samples with 1 evaluation.
-     Range (min … max):  713.850 μs …   3.865 ms  ┊ GC (min … max): 0.00% … 74.64%
-     Time  (median):     759.798 μs               ┊ GC (median):    0.00%
-     Time  (mean ± σ):   794.402 μs ± 234.728 μs  ┊ GC (mean ± σ):  2.27% ±  6.20%
+    BenchmarkTools.Trial: 6524 samples with 1 evaluation.
+     Range (min … max):  707.996 μs …   3.773 ms  ┊ GC (min … max): 0.00% … 73.67%
+     Time  (median):     727.015 μs               ┊ GC (median):    0.00%
+     Time  (mean ± σ):   761.750 μs ± 225.610 μs  ┊ GC (mean ± σ):  2.31% ±  6.25%
     
-       ▃▆▃█▄▄▂                                                       
-      ▃███████▇▆▅▄▄▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▂▂▂▁▂▁▁▂▂▂▂▂▂▂▂▂▂▂▂ ▃
-      714 μs           Histogram: frequency by time         1.24 ms <
+      ▆█▇▆▅▄▄▄▃▃▂▂▁▁                                                ▂
+      ███████████████▇██▇▇▃▅▅▄▅▅▄▃▄▁▃▃▁▁▃▃▃▃▁▃▁▃▁▁▁▃▁▄▁▁▁▃▃▆▆▆▆▆▆▄▄ █
+      708 μs        Histogram: log(frequency) by time        1.2 ms <
     
      Memory estimate: 338.53 KiB, allocs estimate: 495.
 
@@ -597,7 +607,7 @@ You can use
 
 
 
-instruct!(reg::<b>MajoranaReg</b>, gate::<b>AbstractMatrix</b>, locs) in FLOYao at <a href="https://github.com/PhaseCraft/FLOYao.jl/tree/4d66a3d6b5629ae5eb391e1a1b585c7abd1a1d53//src/instruct.jl#L49" target="_blank">/home/yc20910/PhD/Work/code/FLOYao/src/instruct.jl:49</a>
+instruct!(reg::<b>MajoranaReg</b>, gate::<b>AbstractMatrix</b>, locs) in FLOYao at <a href="https://github.com/PhaseCraft/FLOYao.jl/tree/393c4267ce568dbf1ee7dc8ea358358e437766d9//src/instruct.jl#L49" target="_blank">/home/yc20910/PhD/Work/code/FLOYao/src/instruct.jl:49</a>
 
 
 
@@ -660,14 +670,14 @@ end
 
 
 
-    BenchmarkTools.Trial: 10000 samples with 585 evaluations.
-     Range (min … max):  188.162 ns …   4.742 μs  ┊ GC (min … max): 0.00% … 92.38%
-     Time  (median):     213.903 ns               ┊ GC (median):    0.00%
-     Time  (mean ± σ):   249.819 ns ± 296.990 ns  ┊ GC (mean ± σ):  9.48% ±  7.55%
+    BenchmarkTools.Trial: 10000 samples with 676 evaluations.
+     Range (min … max):  183.416 ns …   4.023 μs  ┊ GC (min … max): 0.00% … 93.94%
+     Time  (median):     198.760 ns               ┊ GC (median):    0.00%
+     Time  (mean ± σ):   224.080 ns ± 242.728 ns  ┊ GC (mean ± σ):  9.29% ±  8.02%
     
-         ▅▄█▆▅▆▆▅▄▄▄▃▂▁▁                               ▁▁▁▁         ▂
-      ▃▅█████████████████▇▆▅▆▄▄▄▅▃▄▅▅▅▃▄▅▅▅▆▆▆▆▆▇▇▇▇████████████▇▇▆ █
-      188 ns        Histogram: log(frequency) by time        388 ns <
+      ▇ ▆ █▁▅ ▁                                                      
+      █▅███████▆▆▅▄▃▃▃▂▃▂▂▂▂▂▂▂▂▂▂▂▁▂▂▂▂▂▂▂▁▁▁▂▂▁▁▁▂▂▂▁▂▁▂▂▂▂▂▂▂▂▂▂ ▃
+      183 ns           Histogram: frequency by time          362 ns <
     
      Memory estimate: 512 bytes, allocs estimate: 4.
 
@@ -698,7 +708,7 @@ This implies the normal fermionic creation and annihilation operators are given 
 ```
 and products of two Majorana operators are of the form
 ```math
-    σ_i \left( ∏_{k=i+1}^{j-1} Z_k \right) σ_k
+    σ_i \left(∏_{i<j<k} Z_k \right) σ_k
     \quad \textrm{or} \quad
     Z_i
 ```
@@ -735,7 +745,7 @@ and then compute the expectation value
 \begin{aligned}
     ⟨ψ|UHU^†|ψ⟩ &= \frac{i}{4} \tilde H^{mn} ⟨Ω|γ_{m} γ_{n}|Ω⟩ \\
                 &= - \frac{1}{2} ∑_{i} \tilde H^{2i-1,2i} \\
-                &= - \frac{1}{2} ∑_{i>k} R^{2i-1}_{m} R^{2i}_{n} H^{mn} \\
+                &= - \frac{1}{2} ∑_{i} R^{2i-1}_{m} R^{2i}_{n} H^{mn} \\
 \end{aligned}.
 ```
 From the first to second line one needs to carefully think which of the 
@@ -779,3 +789,8 @@ represent the same FLO circuit but only the latter will be recognised as such. T
 
 If you run into a case that is a FLO circuit / gate but not recognised as such please open an issue or even pull request.
 
+
+
+```julia
+
+```
