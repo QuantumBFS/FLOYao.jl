@@ -74,6 +74,10 @@ end
     areg |> tdg
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 
+    @test_warn "Calling manual instruct!" Yao.instruct!(mreg, mat(FSWAP), (1,2))
+    Yao.instruct!(areg, mat(FSWAP), (1,2))
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
     rx = put(nq, 2 => Rx(0.1))
     ry = put(nq, 1 => Ry(0.1))
     @test_throws NonFLOException mreg |> rx
@@ -155,9 +159,12 @@ end
     mreg |> put(nq, 2=>X)
     areg |> put(nq, 2=>X)
 
-    meval = @test_warn "Calling manual" expect(ham, mreg => circuit)
-    aeval = expect(ham, areg => circuit) 
+    meval = @test_warn "Calling manual" expect(ham, mreg |> circuit)
+    aeval = expect(ham, areg |> circuit) 
+    @test meval ≈ aeval
 
+    meval = expect(ham[end], mreg)
+    aeval = expect(ham[end], areg)
     @test meval ≈ aeval
 end
 
@@ -281,4 +288,15 @@ end
     mhist = StatsBase.normalize(fit(Histogram, Int.(msamples), nbins=2^3), mode=:probability)
     ahist = StatsBase.normalize(fit(Histogram, Int.(asamples), nbins=2^3), mode=:probability)
     @test sum(abs, ahist.weights - mhist.weights) < 0.01
+end
+
+@testset "utils" begin
+    nq = 4
+    ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
+    ham_qubit = mat(ham)
+    ham_pauli = FLOYao.qubit2paulibasis(ham_qubit)
+    @test FLOYao.paulibasis2qubitop(ham_pauli) ≈ ham_qubit
+
+    ham_majorana = FLOYao.paulibasis2majoranasquares(ham_pauli)
+    @test FLOYao.majoranasquares2qubitbasis(ham_majorana) ≈ ham_qubit
 end
