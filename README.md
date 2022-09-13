@@ -35,7 +35,7 @@ git clone git@github.com:PhaseCraft/FLOYao.jl
 ```
 and then open a julia REPL and type
 ```
-pkg> dev your_favorite_folder_for_code/FLOYao.jl
+pkg> add your_favorite_folder_for_code/FLOYao.jl
 ```
 which should make `FLOYao.jl` discoverable for your standard julia installation. 
 Under linux the standard folder for julia packages under development is `/home/username/.julia/dev`
