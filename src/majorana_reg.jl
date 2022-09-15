@@ -26,7 +26,7 @@ A register holding the "state" of a Majorana operators when propagating through
 a FLO circuit as a `2n×2n` matrix.
 
 #  Warning
-The `MajoranaReg` constructor will not normalize the `state` matrix. It is 
+The `MajoranaReg` constructor will not initialize the `state` matrix. It is 
 recommended to use `FLOYao.zero_state` or `FLOYao.product_state` to produce
 your initial state.
 """
@@ -46,6 +46,15 @@ Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
 Base.eltype(reg::MajoranaReg) = eltype(reg.state)
 Yao.datatype(::MajoranaReg{T}) where {T} = T
 Yao.state(reg::MajoranaReg) = reg.state
+
+function Base.:(==)(lhs::MajoranaReg, rhs::MajoranaReg)
+    return nqubits(lhs) == nqubits(rhs) && state(lhs) == state(rhs)
+end
+
+function Base.isapprox(lhs::MajoranaReg, rhs::MajoranaReg)
+    return nqubits(lhs) == nqubits(rhs) && isapprox(state(lhs), state(rhs))
+end
+
 
 # The detailed version showing the contents of the register in e.g. 
 # the jupyter cell output
@@ -126,10 +135,14 @@ function product_state!(reg::MajoranaReg, bit_str::DitStr{2,N,IT}) where {N,IT}
 end
 
 """
-    product_state([T=Float64,] bit_str)
+    product_state([T=Float64,] bit_str::DitStr{2})
+    product_state([T=Float64,] bit_configs::AbstractVector)
+    product_state([T=Float64,] nbits::Int, val::Int)
 
-A Majorana register in the computational basis state specified by the 
-`bit_str`.
+Create an `MajoranaReg` of a product state.
+
+The state can be specified as a bit string, as an array of Integers or Booleans
+or with `nbits` and `val`.
 """
 function product_state(::Type{T}, bit_str::DitStr{2,N,IT}) where {N,T,IT}
     reg = MajoranaReg(T, N)
@@ -138,6 +151,17 @@ function product_state(::Type{T}, bit_str::DitStr{2,N,IT}) where {N,T,IT}
 end
 
 product_state(bit_str) = product_state(Float64, bit_str)
+
+# vector input
+function product_state(::Type{T}, bit_configs::AbstractVector) where {T}
+    return product_state(T, DitStr{2}(bit_configs))
+end
+
+# integer input
+function product_state(::Type{T}, nbits::Int, val::Integer) where {T}
+    return product_state(T, DitStr{2,nbits}(val))
+end
+
 
 """
     zero_state!(reg::MajoranaReg)

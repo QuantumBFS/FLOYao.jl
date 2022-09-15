@@ -42,6 +42,12 @@ import FLOYao: majorana2arrayreg, NonFLOException
     mreg2 = FLOYao.product_state(bit"11111")
     FLOYao.one_state!(mreg)
     @test fidelity(mreg, mreg2) ≈ 1.
+
+    r1 = FLOYao.product_state(Float32, bit"001")
+    r2 = FLOYao.product_state(Float32, [1, 0, 0])
+    r3 = FLOYao.product_state(Float32, 3, 0b001)
+    @test r1 ≈ r2   # because we read bit strings from right to left, vectors from left to right.
+    @test r1 ≈ r3
 end
 
 @testset "PutBlock" begin
