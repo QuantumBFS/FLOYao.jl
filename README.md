@@ -4,8 +4,6 @@
 [![codecov][codecov-img]](codecov-url)
 [![][docs-stable-img]][docs-stable-url]
 [![][docs-dev-img]][docs-dev-url]
-[![Aqua QA][aqua-img]][aqua-url]
-[![Downloads][downloads-img]][downloads-url]
 
 
 A backend to efficiently simulate fermionic linear optics (FLO) circuits in [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
