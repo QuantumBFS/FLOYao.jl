@@ -1,5 +1,13 @@
 # FLOYao.jl
 
+[![CI][ci-img]][ci-url]
+[![codecov][codecov-img]](codecov-url)
+[![][docs-stable-img]][docs-stable-url]
+[![][docs-dev-img]][docs-dev-url]
+[![Aqua QA][aqua-img]][aqua-url]
+[![Downloads][downloads-img]][downloads-url]
+
+
 A backend to efficiently simulate fermionic linear optics (FLO) circuits in [Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl) based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
 and [Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
 FLO circuits are a class of quantum circuits that are closely related to non-interacting fermions 
@@ -794,3 +802,14 @@ If you run into a case that is a FLO circuit / gate but not recognised as such p
 ```julia
 
 ```
+
+
+
+[ci-img]: https://github.com/QuantumBFS/FLOYao.jl/workflows/CI/badge.svg
+[ci-url]: https://github.com/QuantumBFS/FLOYao.jl/actions
+[codecov-img]: https://codecov.io/gh/QuantumBFS/FLOYao.jl/branch/master/graph/badge.svg?token=U604BQGRV1
+[codecov-url]: https://codecov.io/gh/QuantumBFS/FLOYao.jl
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://QuantumBFS.github.io/FLOYao.jl/dev/
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://QuantumBFS.github.io/FLOYao.jl/stable
