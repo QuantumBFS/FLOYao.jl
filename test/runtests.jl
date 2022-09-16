@@ -44,7 +44,7 @@ import FLOYao: majorana2arrayreg, NonFLOException
     mreg2 = FLOYao.product_state(bit"11111")
     FLOYao.one_state!(mreg)
     @test fidelity(mreg, mreg2) ≈ 1.
-    @test fidelity(mreg, FLOYao.one_state(nq)) ≈ 1.
+    @test fidelity(mreg, FLOYao.one_state(nqubits(mreg))) ≈ 1.
 
     r1 = FLOYao.product_state(Float32, bit"001")
     r2 = FLOYao.product_state(Float32, [1, 0, 0])
