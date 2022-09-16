@@ -1,15 +1,22 @@
 using Documenter
 using FLOYao
+using YaoAPI
 using DocThemeIndigo
+using YaoArrayRegister
 
 indigo = DocThemeIndigo.install(FLOYao)
 
 const PAGES = [
     "Home" => "index.md",
+    "Features" => "features/features.md",
+    "Supported Gates" => "features/supported_gates.md",
+    "Mathematical Background" => "background.md",
+    "Adding custom gates" => "adding_gates.md",
+    "Known restrictions" => "known_restrictions.md",
 ]
 
 makedocs(;
-    modules = [FLOYao],
+    modules = [FLOYao,YaoAPI],
     format = Documenter.HTML(
         prettyurls = !("local" in ARGS),
         canonical="https://QuantumBFS.github.io/FLOYao.jl",

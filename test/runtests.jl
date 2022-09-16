@@ -15,10 +15,12 @@
 #  limitations under the License.
 =#
 
-using Yao
 using Test
 using FLOYao
+using YaoAPI # needed for the doctest tests
+using Yao
 using StatsBase
+using Documenter
 import FLOYao: majorana2arrayreg, NonFLOException
 
 @const_gate TestGate::ComplexF64 = [1 0 ; 0 exp(-1im*π/5)]
@@ -322,4 +324,8 @@ end
 
     ham_majorana = FLOYao.paulibasis2majoranasquares(ham_pauli)
     @test FLOYao.majoranasquares2qubitbasis(ham_majorana) ≈ ham_qubit
+end
+
+@testset "docs" begin
+    doctest(FLOYao; manual=false)
 end

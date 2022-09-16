@@ -160,7 +160,7 @@ end
 """
     majoranasquares2qubitbasis(H::AbstractMatrix)
 
-Converts an `2n×2n` Majorana hamiltonian `H` into the full `2^n×2^n` hamiltonian
+Converts an ``2n×2n`` Majorana hamiltonian `H` into the full ``2^n×2^n`` hamiltonian
 in the qubit basis.
 """
 function majoranasquares2qubitbasis(H::AbstractMatrix)
@@ -175,8 +175,8 @@ end
 """
     qubit2majoranaevolution(U::AbstractMatrix, locs)
 
-Turns a `n` qubit unitary `U` on the `n` qubits in `locs` into the corresponding
-`SO(2n×2n)` matrix for the evolution of the Majorana operators.
+Turns a ``n`` qubit unitary `U` on the ``n`` qubits in `locs` into the corresponding
+``SO(2n×2n)`` matrix for the evolution of the Majorana operators.
 """
 function qubit2majoranaevolution(U::AbstractMatrix, locs)
     A = 1im * log(U)
@@ -187,9 +187,9 @@ function qubit2majoranaevolution(U::AbstractMatrix, locs)
 end
 
 """
-    yaoham2majoranasquares(k::KronBlock)
+    kron2majoranaindices(k::KronBlock)
 
-Get the numbers of majorana operators from a kronecker product of pauli operators
+Get the indices of majorana operators from a kronecker product of pauli operators
 """
 function kron2majoranaindices(k::KronBlock)
     locs = collect(Iterators.flatten(k.locs))
@@ -243,7 +243,7 @@ kron2majoranaindices(k::PutBlock{2,1,ZGate}) = (2k.locs[1]-1, 2k.locs[1])
     yaoham2majoranasquares(::Type{T}=Float64, yaoham::AbstracBlock{2})
 
 Convert a hamiltonian written as a YaoBlock into the corresponding 
-2n×2n majorana hamiltonian.
+``2n×2n`` majorana hamiltonian.
 """
 function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))

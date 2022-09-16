@@ -25,7 +25,7 @@
 A register holding the "state" of a Majorana operators when propagating through
 a FLO circuit as a `2n×2n` matrix.
 
-#  Warning
+# Warning
 The `MajoranaReg` constructor will not initialize the `state` matrix. It is 
 recommended to use `FLOYao.zero_state` or `FLOYao.product_state` to produce
 your initial state.
@@ -76,7 +76,7 @@ Converts a `2n×2n` MajoranaReg `reg` into a `2^n` ArrayReg.
 
 # Note
 This implementation is not very clever and should mainly be used for debugging
-purposes with small numbers of qubits. If ⟨Ω|U|Ω⟩ is close to zero, it is not
+purposes with small numbers of qubits. If ``⟨Ω|U|Ω⟩`` is close to zero, it is not
 very accurate.
 """
 function majorana2arrayreg(reg::MajoranaReg)
@@ -114,6 +114,12 @@ end
 
 zero_state(n) = zero_state(Float64, n)
 
+"""
+    zero_state_like(reg::AbstractRegister)
+
+Create a Majorana register in the zero state with the same element type 
+and number of qubits as `reg`.
+"""
 function zero_state_like(reg::AbstractRegister)
     return zero_state(real(datatype(reg)), nqubits(reg))
 end
@@ -186,3 +192,17 @@ function one_state!(reg::MajoranaReg{T}) where {T}
     end
     return reg
 end
+
+"""
+    one_state([T=Float64,] n)
+
+Create a Majorana register on `n` qubits in the all one state ``|1 ⋯ 1⟩`` with
+storage type `T`.
+"""
+function one_state(::Type{T}, n::Integer) where {T}
+    reg = MajoranaReg(T, n)
+    one_state!(reg)
+    return reg
+end
+
+one_state(n) = one_state(Float64, n)

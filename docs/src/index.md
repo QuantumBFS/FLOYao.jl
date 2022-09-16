@@ -1,9 +1,9 @@
 # FLOYao
 
-A backend to efficiently simulate _fermionic linear optics_ (FLO) circuits in
-[Yao.jl](https://github.com/QuantumBFS/Yao.jlhttps://github.com/QuantumBFS/Yao.jl)
-based on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010) and
-[Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
+A [Yao.jl](https://github.com/QuantumBFS/Yao.jl) backend to efficiently simulated
+fermionic linear optics (FLO) circuits in  based on
+[Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
+and [Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
 FLO circuits are a class of quantum circuits that are closely related to
 non-interacting fermions and can be efficiently simulated on classical
 computers, similar to the way Clifford circuits can be efficiently classically
@@ -21,14 +21,14 @@ pkg> add FLOYao
 ```
 
 ## Quickstart
-First import `Yao` and `FLOYao`:
+First import `FLOYao` and `Yao`
 ```jldoctest quickstart; output=false
-using Yao, FLOYao
+using FLOYao, Yao
 
 # output
 ```
 
-then build a (here somewhat arbitrary) circuit consisting only of [FLO gates](#Background-Fermionic-linear-optics-circuits)
+then build a (here somewhat arbitrary) circuit consisting only of [Supported gates](@ref)
 
 ```jldoctest quickstart; output=false
 nq = 4
@@ -72,7 +72,7 @@ kron
    └─ Z
 ```
 
-and define an observable that is a sum of squares of Majorana operators
+and define an observable that is a sum of squares of [Majorana operators](@ref background)
 
 ```jldoctest quickstart; output=false
 hamiltonian = xxg1 + xxg2 + xxg3 + kron(nq, 2=>Z) + kron(nq, 3=>Z)
@@ -99,9 +99,9 @@ nqubits: 4
 and finally create a register in the computational zero state via
 
 ```jldoctest quickstart
-mreg = FLOYao.zero_state(nq)
+reg = FLOYao.zero_state(nq)
 
-# output 
+# output
 MajoranaReg{Float64} with 4 qubits:
 8×8 Matrix{Float64}:
  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
@@ -117,9 +117,9 @@ MajoranaReg{Float64} with 4 qubits:
 Applying the circuit to the register works then exactly the same way as for a normal `ArrayReg` register:
 
 ```jldoctest quickstart
-apply(mreg, circuit)
+apply(reg, circuit)
 
-# output 
+# output
 MajoranaReg{Float64} with 4 qubits:
 8×8 Matrix{Float64}:
  -1.0  -0.0       -0.0       -0.0       -0.0       -0.0       -0.0       -0.0
@@ -135,7 +135,7 @@ MajoranaReg{Float64} with 4 qubits:
 and the same goes for expectation values of observables
 
 ```jldoctest quickstart
-expect(hamiltonian, mreg => circuit)
+expect(hamiltonian, reg => circuit)
 
 # output
 1.8535533905932737
@@ -144,7 +144,7 @@ expect(hamiltonian, mreg => circuit)
 or even gradients of these expectation values with respect to the circuit parameters
 
 ```jldoctest quickstart
-state_grad, params_grad = expect'(hamiltonian, mreg => circuit)
+state_grad, params_grad = expect'(hamiltonian, reg => circuit)
 
 # output
 MajoranaReg{Float64}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
@@ -154,7 +154,7 @@ MajoranaReg{Float64}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
 
 ```@contents
 Pages = [
-    "quickstart.md",
+    "vqe_example.md",
     "features/features.md",
     "features/supported_gates.md",
     "background.md",

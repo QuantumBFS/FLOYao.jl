@@ -110,6 +110,18 @@ for each new sample and also does not alter it.
  - `nshots=1`: The number of samples to take
  - `rng=Random.GLOBAL_RNG`: The random number generator to use
 """
+function Yao.measure(reg::MajoranaReg;
+                     nshots::Int=1, rng=Random.GLOBAL_RNG)
+    covmat = covariance_matrix(reg)
+    samples = Vector{BitStr{size(covmat,1)÷2,BigInt}}(undef, nshots)
+    M = similar(covmat)
+    for i in 1:nshots
+        M .= covmat
+        samples[i] = sample(M, rng)
+    end
+    return samples
+end
+
 function Yao.measure(reg::MajoranaReg, locs;
                      nshots::Int=1, rng=Random.GLOBAL_RNG)
     covmat = covariance_matrix(reg)
@@ -123,20 +135,8 @@ function Yao.measure(reg::MajoranaReg, locs;
     return samples
 end
 
-function Yao.measure(reg::MajoranaReg;
-                     nshots::Int=1, rng=Random.GLOBAL_RNG)
-    covmat = covariance_matrix(reg)
-    samples = Vector{BitStr{size(covmat,1)÷2,BigInt}}(undef, nshots)
-    M = similar(covmat)
-    for i in 1:nshots
-        M .= covmat
-        samples[i] = sample(M, rng)
-    end
-    return samples
-end
-
 """
-    measure([postprocess::Union{NoPostProcess, ResetTo},] reg::MajoranaReg; rng=Random.GLOBAL_RNG)
+    measure!([postprocess::Union{NoPostProcess, ResetTo},] reg::MajoranaReg; rng=Random.GLOBAL_RNG)
 
 Measure a Majorana `reg`ister in the computational basis and return the 
 resulting `BitStr`.

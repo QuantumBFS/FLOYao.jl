@@ -24,9 +24,9 @@ implementation is also found in my wiki in `simulating-fermionic-linear-optic-ci
 module FLOYao
 
 using LinearAlgebra
-using Yao
-using SparseArrays
 using Random
+using SparseArrays
+using Yao
 
 export MajoranaReg
 
