@@ -4,6 +4,10 @@ using DocThemeIndigo
 
 indigo = DocThemeIndigo.install(FLOYao)
 
+const PAGES = [
+    "Home" => "index.md",
+]
+
 makedocs(;
     modules = [FLOYao],
     format = Documenter.HTML(
@@ -11,9 +15,7 @@ makedocs(;
         canonical="https://QuantumBFS.github.io/FLOYao.jl",
         assets=String[indigo],
     ),
-    pages = [
-        "Home" => "index.md",
-    ],
+    pages = PAGES,
     repo = "https://github.com/QuantumBFS/FLOYao.jl",
     sitename = "FLOYao.jl",
 )
