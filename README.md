@@ -68,8 +68,8 @@ FLOYao.zero_state(nq) |> circuit |> measure!
 ```
 
 ## Documentation
-The documentation for the last release is [here](docs-stable-url) and the documentation
-for the current development branch [here](docs-dev-url).
+The documentation for the last release is [here][docs-stable-url] and the documentation
+for the current development branch [here][docs-dev-url].
 
 [ci-img]: https://github.com/QuantumBFS/FLOYao.jl/workflows/CI/badge.svg
 [ci-url]: https://github.com/QuantumBFS/FLOYao.jl/actions
