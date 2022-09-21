@@ -1,7 +1,7 @@
 # FLOYao.jl
 
 [![CI][ci-img]][ci-url]
-[![codecov][codecov-img]](codecov-url)
+[![codecov][codecov-img]][codecov-url]
 [![][docs-stable-img]][docs-stable-url]
 [![][docs-dev-img]][docs-dev-url]
 
