@@ -59,6 +59,7 @@ push!(circuit, put(nq, 1=>Z))
 
 xxg3 = kron(nq, 2 => X, 3 => X)
 rg = rot(xxg3, θ)
+push!(circuit, rg)
 ```
 
 and create a FLO state, pipe it through the circuit and measure the result
