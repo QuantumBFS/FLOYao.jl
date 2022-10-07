@@ -43,7 +43,7 @@ Yao.nactive(reg::MajoranaReg) = Yao.nqubits(reg)
 Yao.nbatch(reg::MajoranaReg) = 1
 Yao.nremain(reg::MajoranaReg) = 0
 Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
-Base.eltype(reg::MajoranaReg) = eltype(reg.state)
+Base.eltype(::MajoranaReg{T}) where {T} = T
 Yao.datatype(::MajoranaReg{T}) where {T} = T
 Yao.state(reg::MajoranaReg) = reg.state
 
@@ -54,7 +54,6 @@ end
 function Base.isapprox(lhs::MajoranaReg, rhs::MajoranaReg)
     return nqubits(lhs) == nqubits(rhs) && isapprox(state(lhs), state(rhs))
 end
-
 
 # The detailed version showing the contents of the register in e.g. 
 # the jupyter cell output
@@ -76,13 +75,13 @@ Converts a `2n×2n` MajoranaReg `reg` into a `2^n` ArrayReg.
 
 # Note
 This implementation is not very clever and should mainly be used for debugging
-purposes with small numbers of qubits. If ``⟨Ω|U|Ω⟩`` is close to zero, it is not
-very accurate.
+purposes with small numbers of qubits. If ``⟨+⋯ +|U|+⋯ +⟩`` is close to zero,
+it is not very accurate.
 """
 function majorana2arrayreg(reg::MajoranaReg)
     nq = nqubits(reg)
 
-    # praying here, that the zero_state has non-zero overlap with the 
+    # praying here, that the uniform_state has non-zero overlap with the 
     # new vacuum state.
     # This first bit gets areg into the new vacuum by piping it through
     # the projector U|Ω⟩⟨Ω|U^† 
