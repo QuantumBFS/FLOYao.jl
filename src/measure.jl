@@ -29,7 +29,6 @@ of a FLO state ``U|Ω⟩``.
 """
 function covariance_matrix(reg::MajoranaReg)
     nq = nqubits(reg)
-    M = zeros(eltype(reg), 2nq, 2nq)
     G = I(nq) ⊗ [0 1; -1 0]
     return reg.state * G * reg.state'
 end
