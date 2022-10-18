@@ -71,7 +71,7 @@ function bitstring_probability(reg::MajoranaReg{T}, bit_string::DitStr{2,N,ST}) 
         p *= pi
         update_covariance_matrix!(M, i, pi, ni)
     end
-    return p
+    return p > zero(T) ? p : zero(T) # floating point issues can cause very small probabilities to get negative.
 end
 
 function Yao.fidelity(reg1::MajoranaReg{T1}, reg2::MajoranaReg{T2}) where {T1,T2}
