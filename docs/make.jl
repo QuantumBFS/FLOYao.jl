@@ -8,6 +8,7 @@ indigo = DocThemeIndigo.install(FLOYao)
 
 const PAGES = [
     "Home" => "index.md",
+    "Example: VQE for the TFIM" => "vqe_example.md",
     "Features" => "features/features.md",
     "Supported Gates" => "features/supported_gates.md",
     "Mathematical Background" => "background.md",
