@@ -32,7 +32,6 @@ mreg |> fswap
     └ @ FLOYao ~/.julia/.../FLOYao/src/instruct.jl:56
 
     MajoranaReg{Float64} with 4 qubits:
-    8×8 Matrix{Float64}:
      -2.35415e-16  -4.12493e-16  -1.0          …   0.0   0.0   0.0   0.0
       2.46746e-16  -5.5708e-16   -1.26504e-16      0.0   0.0   0.0   0.0
      -1.0          -1.17708e-16   2.55988e-16      0.0   0.0   0.0   0.0

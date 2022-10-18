@@ -57,9 +57,9 @@ end
 
 # The detailed version showing the contents of the register in e.g. 
 # the jupyter cell output
-function Base.show(io::IO, m::MIME"text/plain", reg::MajoranaReg)
+function Base.show(io::IO, ::MIME"text/plain", reg::MajoranaReg)
     println(io, typeof(reg), " with $(Yao.nqubits(reg)) qubits:")
-    show(io, m, reg.state)
+    Base.print_array(io, reg.state)
 end
 
 # Less detailed version that is used e.g. in string interpolations
