@@ -17,6 +17,7 @@ FLOYao.zero_state
 FLOYao.zero_state_like
 FLOYao.one_state
 FLOYao.product_state
+FLOYao.rand_state
 ```
 
 as well as some functions to reset [`MajoranaReg`](@ref)'s to fixed states:
@@ -65,4 +66,5 @@ FLOYao.qubit2majoranaevolution
 FLOYao.paulibasis2majoranasquares
 FLOYao.yaoham2majoranasquares
 FLOYao.majorana2arrayreg
+FLOYao.random_orthogonal_matrix
 ```

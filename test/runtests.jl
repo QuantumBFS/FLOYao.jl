@@ -21,6 +21,7 @@ using YaoAPI # needed for the doctest tests
 using Yao
 using StatsBase
 using Documenter
+using LinearAlgebra
 import FLOYao: majorana2arrayreg, NonFLOException
 
 @const_gate TestGate::ComplexF64 = [1 0 ; 0 exp(-1im*π/5)]
@@ -51,6 +52,12 @@ import FLOYao: majorana2arrayreg, NonFLOException
     r3 = FLOYao.product_state(Float32, 3, 0b001)
     @test r1 ≈ r2   # because we read bit strings from right to left, vectors from left to right.
     @test r1 ≈ r3
+
+    nq = 5
+    mreg = FLOYao.rand_state(nq)
+    @test mreg.state * mreg.state' ≈ I(2nq)
+    mreg = FLOYao.rand_state(Float32, nq)
+    @test mreg.state * mreg.state' ≈ I(2nq)
 end
 
 @testset "PutBlock" begin
@@ -226,38 +233,26 @@ end
 end
 
 @testset "fidelity" begin
-    nq = 4
-    circuit = chain(nq)
+    nq = 5
+    mreg1 = FLOYao.rand_state(nq)
+    areg1 = FLOYao.majorana2arrayreg(mreg1)
+    mreg2 = FLOYao.rand_state(nq)
+    areg2 = FLOYao.majorana2arrayreg(mreg2)
 
-    θ = π/8
-    xxg = kron(nq, 1 => X, 2 => Y)
-    rg = rot(xxg, θ)
-    push!(circuit, rg)  
-    push!(circuit, put(nq, 3=>Rz(0.5)))
-    push!(circuit, rg)  
+    @test isapprox(fidelity(mreg1, mreg2), fidelity(areg1, areg2), atol=1e-7)
+    @test isapprox(fidelity(mreg1, FLOYao.zero_state_like(mreg1)),
+                   fidelity(areg1, zero_state_like(areg1, nq)),
+                   atol=1e-8)
 
-    mreg1 = FLOYao.zero_state(nq)
-    areg1 = zero_state(nq)
-    mreg1 |> circuit
-    areg1 |> circuit
-
-    θ = π/5
-    xxg = kron(nq, 2 => X, 3 => Z, 4 => Y)
-    rg = rot(xxg, θ)
-    circuit = chain(nq)
-    push!(circuit, rg)  
-    push!(circuit, put(nq, 3=>Rz(0.5)))
-    push!(circuit, put(nq, 1=>Z))
-    push!(circuit, put(nq, 4=>X))
-    push!(circuit, rg)  
-
-    mreg2 = FLOYao.zero_state(nq)
-    areg2 = zero_state(nq)
-    mreg2 |> circuit
-    areg2 |> circuit
-
-    @test fidelity(mreg1, mreg2) ≈ fidelity(areg1, areg2)
-    @test fidelity(mreg1, FLOYao.zero_state_like(mreg1)) ≈ fidelity(areg1, zero_state_like(areg1, nq))
+    # ensure that if previously the fidelity was zero because of different 
+    # determinants it now isn't
+    x1 = put(nq, 1 => X)
+    mreg1 |> x1
+    areg1 |> x1
+    @test isapprox(fidelity(mreg1, mreg2), fidelity(areg1, areg2), atol=1e-7)
+    @test isapprox(fidelity(mreg1, FLOYao.zero_state_like(mreg1)),
+                   fidelity(areg1, zero_state_like(areg1, nq)),
+                   atol=1e-8)
 end
 
 @testset "measure" begin

@@ -290,3 +290,42 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Scale) where {T<:Real}
 end
 
 yaoham2majoranasquares(yaoham) = yaoham2majoranasquares(Float64, yaoham)
+
+# -------------------------------------
+# Utilities to generate random matrices
+# -------------------------------------
+
+"""
+    random_unit_vector([Float64, ] n, N=n)
+
+Generate a uniformly random vector on the `n`-sphere embedded in ℝ^N and 
+return it and the sign of its first entry.
+"""
+function random_unit_vector(::Type{T}, n, N=n) where {T}
+    v = [randn(T, n); zeros(N-n)]
+    n = norm(v)
+    s = sign(v[1])
+    v[1] += n
+    return v ./ norm(v), s
+end
+
+random_unit_vector(n) = random_unit_vector(Float64, n)
+
+
+"""
+    random_orthogonal_matrix([Float64,] n)
+
+Generate a Haar random matrix in ``O(n)`` with element type `Float64` 
+using the algorithm described in https://arxiv.org/pdf/math-ph/0609050.pdf
+"""
+function random_orthogonal_matrix(::Type{T}, n) where {T}
+    out = Matrix{T}(I(n))
+    for i in 2:n 
+        v, s = random_unit_vector(T, i, n)
+        out .*= s
+        out .-= 2v .* (v' * out)
+    end
+    return out
+end
+
+random_orthogonal_matrix(n) = random_orthogonal_matrix(Float64, n)

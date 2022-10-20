@@ -180,6 +180,18 @@ function zero_state!(reg::MajoranaReg{T}) where {T}
 end
 
 """
+    rand_state([Float64,] n)
+
+Create a Haar random `MajoranaReg` on `n` qubits.
+"""
+function rand_state(::Type{T}, n) where {T}
+    state = random_orthogonal_matrix(T, 2n)
+    return MajoranaReg(state)
+end
+
+rand_state(n) = rand_state(Float64, n)
+
+"""
     one_state!(reg::MajoranaReg)
 
 Put `reg` into the all ones state
