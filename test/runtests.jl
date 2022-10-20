@@ -242,7 +242,7 @@ end
     @test isapprox(fidelity(mreg1, mreg2), fidelity(areg1, areg2), atol=1e-7)
     @test isapprox(fidelity(mreg1, FLOYao.zero_state_like(mreg1)),
                    fidelity(areg1, zero_state_like(areg1, nq)),
-                   atol=1e-8)
+                   atol=1e-7)
 
     # ensure that if previously the fidelity was zero because of different 
     # determinants it now isn't
@@ -252,7 +252,7 @@ end
     @test isapprox(fidelity(mreg1, mreg2), fidelity(areg1, areg2), atol=1e-7)
     @test isapprox(fidelity(mreg1, FLOYao.zero_state_like(mreg1)),
                    fidelity(areg1, zero_state_like(areg1, nq)),
-                   atol=1e-8)
+                   atol=1e-7)
 end
 
 @testset "measure" begin
