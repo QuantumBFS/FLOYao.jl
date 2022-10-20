@@ -43,7 +43,6 @@ for GT in [:(RotationGate{2,T,XGate}),
            :(RotationGate{2,T,YGate})]
     @eval function Yao.unsafe_apply!(reg::MajoranaReg, pb::PutBlock{2,1,$GT}) where {T}
         throw(NonFLOException("Rx and Ry are not a FLO gates"))
-        return reg
     end
 end
 
