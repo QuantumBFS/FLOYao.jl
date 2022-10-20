@@ -305,7 +305,7 @@ function random_unit_vector(::Type{T}, n, N=n) where {T}
     v = [randn(T, n); zeros(N-n)]
     n = norm(v)
     s = sign(v[1])
-    v[1] += n
+    v[1] += s * n
     return v ./ norm(v), s
 end
 
@@ -322,9 +322,10 @@ function random_orthogonal_matrix(::Type{T}, n) where {T}
     out = Matrix{T}(I(n))
     for i in 2:n 
         v, s = random_unit_vector(T, i, n)
-        out .*= s
+        out .*= -s
         out .-= 2v .* (v' * out)
     end
+    rand(Bool) && (out[:,1] .*= -1) # randomize the determinant
     return out
 end
 
