@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Adding custom gates · FLOYao.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link rel="canonical" href="https://QuantumBFS.github.io/FLOYao.jl/adding_gates/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/indigo.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">FLOYao.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../vqe_example/">Example: VQE for the TFIM</a></li><li><a class="tocitem" href="../features/features/">Features</a></li><li><a class="tocitem" href="../features/supported_gates/">Supported Gates</a></li><li><a class="tocitem" href="../background/">Mathematical Background</a></li><li class="is-active"><a class="tocitem" href>Adding custom gates</a></li><li><a class="tocitem" href="../known_restrictions/">Known restrictions</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Adding custom gates</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Adding custom gates</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/QuantumBFS/FLOYao.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Adding-support-for-custom-gates"><a class="docs-heading-anchor" href="#Adding-support-for-custom-gates">Adding support for custom gates</a><a id="Adding-support-for-custom-gates-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-support-for-custom-gates" title="Permalink"></a></h1><p>Natively, the only FLO gates that come already shipped with <code>FLOYao.jl</code> are these <a href="../features/supported_gates/#Supported-gates">Supported gates</a>. But there are many more FLO gates, one being for example the <code>FSWAP</code> gate which swaps to qubits while making sure to preserve the fermionic commutation relations</p><pre><code class="language-julia hljs">@const_gate FSWAP::ComplexF64 = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 -1]</code></pre><p>If a gate defines a matrix representation, as we just did for the <code>FSWAP</code>gate, <code>FLOYao</code> supports them out of the box by manually checking if they are a FLO gate and then computing its matrix representation in the Majorana basis. But this method is fairly slow–-though still poly-time and memory–-compared to directly implementing <code>unsafe_apply!(::MajoranaReg, ::YourBlock)</code> and <code>instruct!(::MajoranaReg, ::YourBlock)</code> and will warn you accordingly:</p><pre><code class="language-julia hljs">nq = 4
+fswap = put(nq, (1, 2) =&gt; FSWAP)
+mreg = FLOYao.zero_state(nq)
+mreg |&gt; put(nq, 2 =&gt; X)
+mreg |&gt; fswap</code></pre><pre><code class="nohighlight hljs">┌ Warning: Calling manual instruct!(MajoranaReg{Float64}(4), ComplexF64[1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im -1.0 + 0.0im], (1, 2)).
+│ You can greatly speed up your FLO gates by exactly implementing unsafe_apply!()
+│ and instruct!() for them. See FLOYao/src/instruct.jl and  FLOYao/src/apply_composite.jl
+│ for how to do that.
+└ @ FLOYao ~/.julia/.../FLOYao/src/instruct.jl:56
+
+MajoranaReg{Float64} with 4 qubits:
+ -2.35415e-16  -4.12493e-16  -1.0          …   0.0   0.0   0.0   0.0
+  2.46746e-16  -5.5708e-16   -1.26504e-16      0.0   0.0   0.0   0.0
+ -1.0          -1.17708e-16   2.55988e-16      0.0   0.0   0.0   0.0
+ -1.85286e-16  -1.0           2.44068e-16      0.0   0.0   0.0   0.0
+ -0.0          -0.0          -0.0             -1.0  -0.0  -0.0  -0.0
+ -0.0          -0.0          -0.0          …  -0.0  -1.0  -0.0  -0.0
+ -0.0          -0.0          -0.0             -0.0  -0.0  -1.0  -0.0
+ -0.0          -0.0          -0.0             -0.0  -0.0  -0.0  -1.0</code></pre><p>Now, before we fix these warnings, let&#39;s see how long the current implementation takes:</p><pre><code class="language-julia hljs">using BenchmarkTools
+using Suppressor # we don&#39;t want to get all the warnings when benchmarking
+@benchmark @suppress apply!($mreg, $fswap)</code></pre><pre><code class="nohighlight hljs">BenchmarkTools.Trial: 6524 samples with 1 evaluation.
+ Range (min … max):  707.996 μs …   3.773 ms  ┊ GC (min … max): 0.00% … 73.67%
+ Time  (median):     727.015 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   761.750 μs ± 225.610 μs  ┊ GC (mean ± σ):  2.31% ±  6.25%
+
+  ▆█▇▆▅▄▄▄▃▃▂▂▁▁                                                ▂
+  ███████████████▇██▇▇▃▅▅▄▅▅▄▃▄▁▃▃▁▁▃▃▃▃▁▃▁▃▁▁▁▃▁▄▁▁▁▃▃▆▆▆▆▆▆▄▄ █
+  708 μs        Histogram: log(frequency) by time        1.2 ms &lt;
+
+ Memory estimate: 338.53 KiB, allocs estimate: 495.</code></pre><p>To find out what the matrix representation of the <code>FSWAP</code> gate in the Majorana basis is, it is easiest to retrace what is happening inside <code>instruct!(::MajoranaReg, ::AbstractMatrix, locs)</code>. You can use</p><pre><code class="language-julia hljs">@which instruct!(mreg, mat(FSWAP), (1,2))</code></pre><pre><code class="nohighlight hljs">instruct!(reg::MajoranaReg, gate::AbstractMatrix, locs) in FLOYao at ~/.julia/.../FLOYao/src/instruct.jl:49</code></pre><p>to find the location of the corresponding code. Now let&#39;s copy-paste what we found there:</p><pre><code class="language-julia hljs">W = FLOYao.qubit2majoranaevolution(Matrix(fswap.content), fswap.locs)</code></pre><pre><code class="nohighlight hljs">4×4 Matrix{Float64}:
+ -2.35415e-16  -4.12493e-16  -1.0           0.0
+  2.46746e-16  -5.5708e-16   -1.26504e-16  -1.0
+ -1.0          -1.17708e-16   2.55988e-16  -2.38988e-16
+ -1.85286e-16  -1.0           2.44068e-16   2.43374e-16</code></pre><pre><code class="language-julia hljs">matlocs = 2*(fswap.locs[1]-1)+1:2(fswap.locs[end])</code></pre><pre><code class="nohighlight hljs">1:4</code></pre><p>this matrix gets left-multiplied to the columns <code>1:4</code> in the last line of <code>FLOYao.majorana_unsafe_apply!(::MajoranaReg, ::PutBlock)</code>. So we can instead implement the action of an <code>FSWAP</code> gate on a <code>MajoranaReg</code> directly as follows:</p><pre><code class="language-julia hljs">function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::PutBlock{2,2,FSWAPGate})
+    FLOYao.areconsecutive(b.locs) || throw(NonFLOException(&quot;FSWAP must act on consecutive qubits&quot;))
+    instruct!(reg, Val(:FSWAP), b.locs)
+end
+
+function Yao.instruct!(reg::MajoranaReg, ::Val{:FSWAP}, locs::Tuple)
+    i1, i2 = locs
+    row1, row2 = reg.state[2i1-1,:], reg.state[2i1,:]
+    row3, row4 = reg.state[2i2-1,:], reg.state[2i2,:]
+    reg.state[2i1-1,:] .=  .-row3
+    reg.state[2i1,:] .=  .-row4
+    reg.state[2i2-1,:] .=  .-row1
+    reg.state[2i2,:] .=  .-row2
+    return reg
+end</code></pre><pre><code class="language-julia hljs">@benchmark apply!($mreg, $fswap)</code></pre><pre><code class="nohighlight hljs">BenchmarkTools.Trial: 10000 samples with 676 evaluations.
+ Range (min … max):  183.416 ns …   4.023 μs  ┊ GC (min … max): 0.00% … 93.94%
+ Time  (median):     198.760 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   224.080 ns ± 242.728 ns  ┊ GC (mean ± σ):  9.29% ±  8.02%
+
+  ▇ ▆ █▁▅ ▁                                                      
+  █▅███████▆▆▅▄▃▃▃▂▃▂▂▂▂▂▂▂▂▂▂▂▁▂▂▂▂▂▂▂▁▁▁▂▂▁▁▁▂▂▂▁▂▁▂▂▂▂▂▂▂▂▂▂ ▃
+  183 ns           Histogram: frequency by time          362 ns &lt;
+
+ Memory estimate: 512 bytes, allocs estimate: 4.</code></pre><p>Which is indeed a significant speed-up!</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../background/">« Mathematical Background</a><a class="docs-footer-nextpage" href="../known_restrictions/">Known restrictions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 20 October 2022 14:33">Thursday 20 October 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
