@@ -75,17 +75,18 @@ Converts a `2n×2n` MajoranaReg `reg` into a `2^n` ArrayReg.
 
 # Note
 This implementation is not very clever and should mainly be used for debugging
-purposes with small numbers of qubits. If ``⟨+⋯ +|U|+⋯ +⟩`` is close to zero,
-it is not very accurate.
+purposes with small numbers of qubits. It pipes a random state ``|ψ⟩`` 
+through the projector ``U|Ω⟩⟨Ω|U^†`` which may give inaccurate results if 
+``⟨ψ|U|ψ⟩`` is very small.
 """
 function majorana2arrayreg(reg::MajoranaReg)
     nq = nqubits(reg)
 
-    # praying here, that the uniform_state has non-zero overlap with the 
+    # praying here, that the rand_state has non-zero overlap with the 
     # new vacuum state.
     # This first bit gets areg into the new vacuum by piping it through
     # the projector U|Ω⟩⟨Ω|U^† 
-    areg = uniform_state(Complex{eltype(reg)}, nq)
+    areg = Yao.rand_state(Complex{eltype(reg)}, nq)
     for i in 1:nq
         γ_i1 = majoranaop(nq, reg.state[:,2i-1])
         γ_i2 = majoranaop(nq, reg.state[:,2i])
