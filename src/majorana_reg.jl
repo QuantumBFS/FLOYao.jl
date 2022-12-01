@@ -42,10 +42,17 @@ Yao.nqudits(reg::MajoranaReg) = size(reg.state, 1) ÷ 2
 Yao.nactive(reg::MajoranaReg) = Yao.nqubits(reg)
 Yao.nbatch(reg::MajoranaReg) = 1
 Yao.nremain(reg::MajoranaReg) = 0
-Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
+Yao.state(reg::MajoranaReg) = reg.state
 Base.eltype(::MajoranaReg{T}) where {T} = T
 Yao.datatype(::MajoranaReg{T}) where {T} = T
-Yao.state(reg::MajoranaReg) = reg.state
+Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
+Base.similar(reg::MajoranaReg) = MajoranaReg(similar(reg.state))
+
+function Base.copyto!(dst::MajoranaReg, src::MajoranaReg)
+    nqubits(dst) != nqubits(src) && throw(DimensionMismatch("nqubits(dst) = $(nqubits(dst)) != nqubits(src) = $(nqubits(src))"))
+    copyto!(state(dst), state(src))
+end
+
 
 function Base.:(==)(lhs::MajoranaReg, rhs::MajoranaReg)
     return nqubits(lhs) == nqubits(rhs) && state(lhs) == state(rhs)
@@ -59,14 +66,13 @@ end
 # the jupyter cell output
 function Base.show(io::IO, ::MIME"text/plain", reg::MajoranaReg)
     println(io, typeof(reg), " with $(Yao.nqubits(reg)) qubits:")
-    Base.print_array(io, reg.state)
+    Base.print_array(io, state(reg))
 end
 
 # Less detailed version that is used e.g. in string interpolations
 function Base.show(io::IO, reg::MajoranaReg)
     print(io, typeof(reg), "($(nqubits(reg)))")
 end
-
 
 """
     majorana2arrayreg(reg::MajoranaReg)
