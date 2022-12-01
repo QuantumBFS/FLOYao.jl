@@ -58,6 +58,16 @@ import FLOYao: majorana2arrayreg, NonFLOException
     @test mreg.state * mreg.state' ≈ I(2nq)
     mreg = FLOYao.rand_state(Float32, nq)
     @test mreg.state * mreg.state' ≈ I(2nq)
+
+    tmp = copy(mreg)
+    @test state(tmp) ≈ state(tmp)
+
+    tmp = similar(mreg)
+    copyto!(tmp, mreg)
+    @test state(tmp) ≈ state(tmp)
+
+    tmp_wrongsize = FLOYao.zero_state(nqubits(mreg) + 1)
+    @test_throws DimensionMismatch copyto!(tmp_wrongsize, mreg)
 end
 
 @testset "PutBlock" begin
