@@ -43,6 +43,12 @@ function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
     return nothing
 end
 
+function Yao.AD.apply_back(st::Tuple{<:MajoranaReg,<:MajoranaReg}, block::AbstractBlock)
+    paramsδ = [] 
+    in, inδ = Yao.AD.apply_back!(st, block, paramsδ)
+    (in, inδ), paramsδ
+end
+
 function Yao.AD.apply_back!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
                             block::PutBlock{2,<:Any,BT},
                             collector) where {BT}

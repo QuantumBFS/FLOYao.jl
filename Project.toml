@@ -1,7 +1,7 @@
 name = "FLOYao"
 uuid = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
 authors = ["janlukas.bosse <janlukas.bosse@gmail.com> and contributors"]
-version = "1.2.1"
+version = "1.2.2"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

@@ -240,6 +240,21 @@ end
     agrad = expect'(ham, areg => circuit)[2] 
 
     @test mgrad ≈ agrad
+
+    mreg = FLOYao.zero_state(nq)
+    areg = zero_state(nq)
+    mreg |> put(nq, 1=>X) |> circuit
+    areg |> put(nq, 1=>X) |> circuit
+
+    mregδ = Yao.AD.expect_g(ham, mreg)
+    aregδ = Yao.AD.expect_g(ham, areg)
+
+    (in_mreg, in_mregδ), params_mregδ = @test_warn "Calling manual" Yao.AD.apply_back((mreg, mregδ), circuit)
+    (in_areg, in_aregδ), params_aregδ = Yao.AD.apply_back((areg, aregδ), circuit)
+    @test params_mregδ ≈ 2params_aregδ
+
+    @test fidelity(majorana2arrayreg(in_mreg), in_areg) ≈ 1.
+
 end
 
 @testset "fidelity" begin

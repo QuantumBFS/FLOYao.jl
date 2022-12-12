@@ -58,6 +58,12 @@ function Base.:(==)(lhs::MajoranaReg, rhs::MajoranaReg)
     return nqubits(lhs) == nqubits(rhs) && state(lhs) == state(rhs)
 end
 
+# Only a sensible operator for Tangent registers. Create a separate type for 
+# these to ensure I can not multiply primal registers with a scalar?
+function Base.:(*)(number::Real, reg::MajoranaReg)
+    return MajoranaReg(number .* reg.state)
+end
+
 function Base.isapprox(lhs::MajoranaReg, rhs::MajoranaReg)
     return nqubits(lhs) == nqubits(rhs) && isapprox(state(lhs), state(rhs))
 end
