@@ -30,7 +30,7 @@ The `MajoranaReg` constructor will not initialize the `state` matrix. It is
 recommended to use `FLOYao.zero_state` or `FLOYao.product_state` to produce
 your initial state.
 """
-mutable struct MajoranaReg{T<:Real} <: AbstractRegister{2}
+struct MajoranaReg{T<:Real} <: AbstractRegister{2}
     state::Matrix{T}
 end
 

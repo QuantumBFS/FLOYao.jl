@@ -23,7 +23,7 @@ const Rotor{T} = Union{RotationGate{2,T},
 function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
     ham = yaoham2majoranasquares(op)
     inδ = copy(in)
-    inδ.state = ham * inδ.state
+    inδ.state .= ham * inδ.state
     for i in 1:nqudits(in) 
         ψ1, ψ2 = inδ.state[:,2i-1], inδ.state[:,2i]
         inδ.state[:,2i-1] .= -ψ2

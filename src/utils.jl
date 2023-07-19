@@ -313,10 +313,11 @@ random_unit_vector(n) = random_unit_vector(Float64, n)
 
 
 """
-    random_orthogonal_matrix([Float64,] n)
+    random_orthogonal_matrix([::Type{T}=Float64,] n)
 
-Generate a Haar random matrix in ``O(n)`` with element type `Float64` 
-using the algorithm described in https://arxiv.org/pdf/math-ph/0609050.pdf
+Generate a Haar random matrix in ``O(n)`` with element type `T` 
+using the algorithm described in [How to generate random matrices from the classical
+compact groups](https://arxiv.org/pdf/math-ph/0609050.pdf)
 """
 function random_orthogonal_matrix(::Type{T}, n) where {T}
     out = Matrix{T}(I(n))
