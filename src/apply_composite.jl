@@ -103,6 +103,17 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::RGate)
     return reg
 end
 
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::PutBlock{2,N,<:RGate}) where {N}
+    areconsecutive(b.locs) || throw(NonFLOException("$(b.blocks) on $(b.locs) is not a FLO gate"))
+    # goddamnit, 1-based indexing
+    i1, i2 = 2 * (minimum(b.locs) - 1) .+ kron2majoranaindices(b.content.block)
+    s, c = sincos(b.content.theta)
+    ψ1, ψ2 = reg.state[i1,:], reg.state[i2,:]
+    reg.state[i1,:] .= c .* ψ1 .+ s .* ψ2
+    reg.state[i2,:] .= c .* ψ2 .- s .* ψ1
+    return reg
+end
+
 # Repeat Block specialisations
 # ----------------------------
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, rp::RepeatedBlock)

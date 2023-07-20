@@ -152,6 +152,11 @@ end
     @test_warn "Calling manual instruct!" mreg |> xx
     areg |> xx
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    xyrot = kron(nq, 2:3 => rot(kron(2, 1=>X, 2=>Y), θ))
+    mreg |> xyrot
+    areg |> xyrot
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 end
 
 @testset "RepeatedBlock" begin
