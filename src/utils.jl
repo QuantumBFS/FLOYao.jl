@@ -239,6 +239,11 @@ end
 
 kron2majoranaindices(k::PutBlock{2,1,ZGate}) = (2k.locs[1]-1, 2k.locs[1])
 
+# TODO: Currently all logic is duplicated in `yaoham2majoransquares(, ::Add)`
+# and all the other methods to make for fast building of the the sparse 
+# Hamiltonian. Is there a better way of first collecting all the entries 
+# with coefficients in a dict and create the actual hamiltonian last?
+
 """
     yaoham2majoranasquares(::Type{T}=Float64, yaoham::AbstracBlock{2})
 
@@ -249,9 +254,7 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     for k in yaoham
         if k isa Scale
-            i1, i2 = kron2majoranaindices(k.content)
-            ham[i1,i2] += 2k.alpha
-            ham[i2,i1] -= 2k.alpha
+            ham += k.alpha * yaoham2majoranasquares(T, k.content)
         elseif k isa KronBlock
             i1, i2 = kron2majoranaindices(k)
             ham[i1,i2] += 2
@@ -260,6 +263,11 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
             ham += yaoham2majoranasquares(T, k)
         elseif k isa PutBlock{2,1,ZGate} 
             i1, i2 = kron2majoranaindices(k)
+            ham[i1,i2] += 2
+            ham[i2,i1] -= 2
+        elseif k isa PutBlock{2,<:Any,<:PauliKronBlock} 
+            areconsecutive(k.locs) || throw(NonFLOException("$(k.content) contains terms that are not the product of two Majoranas"))
+            i1, i2 = 2 * (minimum(k.locs) - 1) .+ kron2majoranaindices(k.content)
             ham[i1,i2] += 2
             ham[i2,i1] -= 2
         else
@@ -280,6 +288,15 @@ end
 function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T<:Real}
     ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     i1, i2 = 2yaoham.locs[1]-1, 2yaoham.locs[1]
+    ham[i1,i2] = 2
+    ham[i2,i1] = -2
+    return ham
+end
+
+function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,N,<:PauliKronBlock}) where {T<:Real, N}
+    areconsecutive(yaoham.locs) || throw(NonFLOException("$(yaoham.content) contains terms that are not the product of two Majoranas"))
+    ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
+    i1, i2 = 2 * (minimum(yaoham.locs) - 1) .+ kron2majoranaindices(yaoham.content)
     ham[i1,i2] = 2
     ham[i2,i1] = -2
     return ham

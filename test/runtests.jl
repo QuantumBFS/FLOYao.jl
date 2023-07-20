@@ -28,6 +28,20 @@ import FLOYao: majorana2arrayreg, NonFLOException
 @const_gate FSWAP::ComplexF64 = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 -1]
 @const_gate ManualX::ComplexF64 = [0 1; 1 0]
 
+function ising_hamiltonian(nq, J, h)
+    U = map(1:nq-1) do i
+        J * kron(nq, i => X, i+1 => X)
+    end |> sum
+
+    T = map(1:nq) do i
+        h * kron(nq, i => Z)
+    end |> sum
+
+    hamiltonian = T + U
+
+    return hamiltonian
+end
+
 @testset "MajoranaRegister" begin
     nq = 2
     mreg = FLOYao.zero_state(nq)
@@ -180,6 +194,21 @@ end
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 end
 
+@testset "TimeEvolution" begin
+    nq = 5 
+    J = 1.5 
+    h = -1.
+    hamiltonian = ising_hamiltonian(nq, J, h)
+    ising_evolution = time_evolve(hamiltonian, 1.)
+
+    mreg = FLOYao.zero_state(nq)
+    areg = zero_state(nq)
+
+    mreg |> ising_evolution
+    areg |> ising_evolution
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+end
+
 @testset "expect" begin
     nq = 4
     circuit = chain(nq)
@@ -194,12 +223,14 @@ end
     θ = π/5
     xxg = kron(nq, 2 => X, 3 => Z, 4 => Y)
     rg = rot(xxg, θ)
+    rz = put(nq, 3 => Rz(θ))
     push!(circuit, rg)  
     push!(circuit, put(nq, 3=>Rz(0.5)))
     push!(circuit, put(nq, (2,3) => FSWAP))
     push!(circuit, put(nq, 1=>Z))
     push!(circuit, put(nq, 4=>X))
     push!(circuit, rg)  
+    push!(circuit, rz)  
 
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
     mreg = FLOYao.zero_state(nq)
@@ -213,6 +244,12 @@ end
 
     meval = expect(ham[end], mreg)
     aeval = expect(ham[end], areg)
+    @test meval ≈ aeval
+
+    # test kronblocks inside put blocks
+    ham = put(nq, 2:3 => kron(2, 1 => X, 2 => Y)) + 2put(nq, 1:2 => kron(2, 1 => X, 2 => Y))
+    meval = expect(ham, mreg)
+    aeval = expect(ham, areg)
     @test meval ≈ aeval
 end
 
@@ -235,6 +272,12 @@ end
     push!(circuit, rg)  
     push!(circuit, put(nq, 3=>Rz(0.5)))
     push!(circuit, put(nq, 1=>Z))
+
+    J = 1.5 
+    h = -1.
+    hamiltonian = ising_hamiltonian(nq, J, h)
+    ising_evolution = time_evolve(hamiltonian, 1.)
+    push!(circuit, ising_evolution)
 
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
     mreg = FLOYao.zero_state(nq)
@@ -259,7 +302,6 @@ end
     @test params_mregδ ≈ params_aregδ
 
     @test fidelity(majorana2arrayreg(in_mreg), in_areg) ≈ 1.
-
 end
 
 @testset "fidelity" begin

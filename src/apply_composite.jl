@@ -84,8 +84,9 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::KronBlock)
     return reg
 end
 
-const PauliGate = Union{I2Gate,XGate,YGate,ZGate}
-const PauliKronBlock = KronBlock{2,N,<:NTuple{N,PauliGate}} where {N}
+# Defined in FLOYao.jl
+# const PauliGate = Union{I2Gate,XGate,YGate,ZGate}
+# const PauliKronBlock = KronBlock{2,N,<:NTuple{N,PauliGate}} where {N}
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::PauliKronBlock)
     i1, i2 = kron2majoranaindices(k)
     reg.state[i1,:] .*= -1
@@ -93,7 +94,8 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::PauliKronBlock)
     return reg
 end
 
-const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
+# Defined in FLOYao.jl
+# const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::RGate)
     i1, i2 = kron2majoranaindices(b.block)
     s, c = sincos(b.theta)
@@ -132,4 +134,12 @@ for G in [:X, :Y, :Z, :T, :Tdag]
         end
         return reg
     end
+end
+
+# Time-Evolution block specialisations
+# ------------------------------------
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::TimeEvolution)
+    H = yaoham2majoranasquares(b.H)
+    reg.state .= exp(b.dt .* H) * reg.state
+    return reg
 end

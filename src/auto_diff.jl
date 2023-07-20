@@ -43,14 +43,24 @@ function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
     return nothing
 end
 
+function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
+                                 block::TimeEvolution, collector)
+    out, outδ = st
+    ham = block.H
+    majoranaham = yaoham2majoranasquares(ham)
+    g = outδ.state ⋅ (majoranaham * out.state) / 2
+    pushfirst!(collector, g)
+    return nothing
+end
+
 function Yao.AD.apply_back(st::Tuple{<:MajoranaReg,<:MajoranaReg}, block::AbstractBlock)
     paramsδ = [] 
     in, inδ = Yao.AD.apply_back!(st, block, paramsδ)
-    (in, inδ), paramsδ
+    return (in, inδ), paramsδ
 end
 
 function Yao.AD.apply_back!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
-                            block::PutBlock{2,<:Any,BT},
+                            block::Union{PutBlock{2,<:Any,BT},TimeEvolution{2,<:Any,BT}},
                             collector) where {BT}
     out, outδ = st
     adjblock = block'

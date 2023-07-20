@@ -30,6 +30,10 @@ using Yao
 
 export MajoranaReg
 
+const PauliGate = Union{I2Gate,XGate,YGate,ZGate}
+const PauliKronBlock = KronBlock{2,N,<:NTuple{N,PauliGate}} where {N}
+const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
+
 include("utils.jl")
 include("majorana_reg.jl")
 include("instruct.jl")
