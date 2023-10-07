@@ -252,15 +252,16 @@ Convert a hamiltonian written as a YaoBlock into the corresponding
 """
 function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
-    for k in yaoham
+    @inbounds for k in yaoham
         if k isa Scale
-            ham += k.alpha * yaoham2majoranasquares(T, k.content)
+            fast_add!(ham, rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
+            #ham += k.alpha * yaoham2majoranasquares(T, k.content)
         elseif k isa KronBlock
             i1, i2 = kron2majoranaindices(k)
             ham[i1,i2] += 2
             ham[i2,i1] -= 2
         elseif k isa Add
-            ham += yaoham2majoranasquares(T, k)
+            fast_add!(ham, yaoham2majoranasquares(T, k))
         elseif k isa PutBlock{2,1,ZGate} 
             i1, i2 = kron2majoranaindices(k)
             ham[i1,i2] += 2
@@ -275,6 +276,19 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
         end
     end
     return ham
+end
+
+function fast_add!(A::AbstractMatrix{T}, B::SparseMatrixCSC{T}) where T
+    @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
+    for j = 1:size(B, 2)
+        for k in SparseArrays.nzrange(B, j)
+            @inbounds A[B.rowval[k],j] += B.nzval[k]
+        end
+    end
+    return A
+end
+function fast_add!(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
+    return A .+= B
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}

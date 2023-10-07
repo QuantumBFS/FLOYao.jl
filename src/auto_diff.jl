@@ -38,9 +38,25 @@ function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
     out, outδ = st
     ham = Yao.AD.generator(block)
     majoranaham = yaoham2majoranasquares(ham)
-    g = outδ.state ⋅ (majoranaham * out.state) / 4
-    pushfirst!(collector, g)
+    # multiply majoranaham with out.state and inner product with outδ.state
+    # i.e. g = outδ.state ⋅ (majoranaham * out.state) / 4
+    pushfirst!(collector, fast_overlap(outδ.state, majoranaham, out.state)/4)
     return nothing
+end
+
+# compute tr(y' * A * x)
+function fast_overlap(y::AbstractVecOrMat{T}, A::SparseMatrixCSC{T}, x::AbstractVecOrMat{T}) where T
+    @assert size(x, 1) == size(A, 2) && size(y, 1) == size(A, 1) && size(x, 2) == size(y, 2) "Dimension mismatch"
+    g = zero(T)
+    @inbounds for j = 1:size(A, 2)
+        for k in SparseArrays.nzrange(A, j)
+            i = A.rowval[k]
+            for m = 1:size(y, 2)
+                g += conj(y[i, m]) * A.nzval[k] * x[j, m]
+            end
+        end
+    end
+    return g
 end
 
 function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},

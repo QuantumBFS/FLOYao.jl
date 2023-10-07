@@ -42,6 +42,24 @@ function ising_hamiltonian(nq, J, h)
     return hamiltonian
 end
 
+@testset "fast_overlap" begin
+    nq = 4
+    x = randn(ComplexF64, 10, 10)
+    y = randn(ComplexF64, 10, 10)
+    A = FLOYao.sprand(ComplexF64, 10, 10, 0.3)
+    r = FLOYao.fast_overlap(y, A, x)
+    @test isapprox(r, tr(y' * A * x), atol=1e-7)
+    @test isapprox(r, y ⋅ (A * x), atol=1e-7)
+end
+
+@testset "fast_add!" begin
+    A = randn(10, 10)
+    B = FLOYao.sprand(10, 10, 0.2)
+    C = copy(A)
+    @test FLOYao.fast_add!(C, B) ≈ A + B
+    @test FLOYao.fast_add!(C, Matrix(B)) ≈ A + B
+end
+
 @testset "MajoranaRegister" begin
     nq = 2
     mreg = FLOYao.zero_state(nq)
