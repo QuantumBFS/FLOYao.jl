@@ -57,6 +57,7 @@ end
     B = FLOYao.sprand(10, 10, 0.2)
     C = copy(A)
     @test FLOYao.fast_add!(C, B) ≈ A + B
+    C = copy(A)
     @test FLOYao.fast_add!(C, Matrix(B)) ≈ A + B
 end
 
