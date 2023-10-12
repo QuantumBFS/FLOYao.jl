@@ -278,19 +278,6 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     return ham
 end
 
-function fast_add!(A::AbstractMatrix{T}, B::SparseMatrixCSC{T}) where T
-    @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
-    for j = 1:size(B, 2)
-        for k in SparseArrays.nzrange(B, j)
-            @inbounds A[B.rowval[k],j] += B.nzval[k]
-        end
-    end
-    return A
-end
-function fast_add!(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
-    return A .+= B
-end
-
 function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}
     ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     i1, i2 = kron2majoranaindices(yaoham)
@@ -362,3 +349,37 @@ function random_orthogonal_matrix(::Type{T}, n) where {T}
 end
 
 random_orthogonal_matrix(n) = random_orthogonal_matrix(Float64, n)
+
+# Fast sparse matrix operations
+# # compute A .+= B
+function fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
+    @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
+    for j = 1:size(B, 2)
+        for k in SparseArrays.nzrange(B, j)
+            @inbounds A[B.rowval[k],j] += B.nzval[k]
+        end
+    end
+    return A
+end
+function fast_add!(A::AbstractMatrix, B::AbstractMatrix)
+    return A .+= B
+end
+
+# compute tr(y' * A * x)
+function fast_overlap(y::AbstractVecOrMat{T1}, A::SparseMatrixCSC{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
+    @assert size(x, 1) == size(A, 2) && size(y, 1) == size(A, 1) && size(x, 2) == size(y, 2) "Dimension mismatch"
+    g = zero(promote_type(T1, T2, T3))
+    @inbounds for j = 1:size(A, 2)
+        for k in SparseArrays.nzrange(A, j)
+            i = A.rowval[k]
+            for m = 1:size(y, 2)
+                g += conj(y[i, m]) * A.nzval[k] * x[j, m]
+            end
+        end
+    end
+    return g
+end
+
+function fast_overlap(y::AbstractVecOrMat{T1}, A::AbstractMatrix{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
+    return y ⋅ (A * x)
+end
