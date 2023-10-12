@@ -38,9 +38,8 @@ function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
     out, outδ = st
     ham = Yao.AD.generator(block)
     majoranaham = yaoham2majoranasquares(ham)
-    # multiply majoranaham with out.state and inner product with outδ.state
-    # i.e. g = outδ.state ⋅ (majoranaham * out.state) / 4
-    pushfirst!(collector, fast_overlap(outδ.state, majoranaham, out.state)/4)
+    g = fast_overlap(outδ.state, majoranaham, out.state) / 4
+    pushfirst!(collector, g)
     return nothing
 end
 

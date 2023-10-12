@@ -350,8 +350,15 @@ end
 
 random_orthogonal_matrix(n) = random_orthogonal_matrix(Float64, n)
 
-# Fast sparse matrix operations
-# # compute A .+= B
+
+# -------------------------------------------
+# Utilities for fast sparse matrix operations
+# -------------------------------------------
+"""
+    fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
+
+Fast implementation of `A .+= B` for sparse `B`.
+"""
 function fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
     @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
     for j = 1:size(B, 2)
@@ -361,11 +368,16 @@ function fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
     end
     return A
 end
+
 function fast_add!(A::AbstractMatrix, B::AbstractMatrix)
     return A .+= B
 end
 
-# compute tr(y' * A * x)
+"""
+    fast_overlap(y::AbstractVecOrMat, A::SparseMatrixCSC, x::AbstractVecOrMat)
+
+Fast implementation of `tr(y' * A * x)` for sparse `A`.
+"""
 function fast_overlap(y::AbstractVecOrMat{T1}, A::SparseMatrixCSC{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
     @assert size(x, 1) == size(A, 2) && size(y, 1) == size(A, 1) && size(x, 2) == size(y, 2) "Dimension mismatch"
     g = zero(promote_type(T1, T2, T3))
