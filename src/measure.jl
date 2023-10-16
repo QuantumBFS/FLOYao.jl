@@ -37,7 +37,8 @@ end
 Updates the covariance matrix `M`, given that the `i`th qubit was measured
 in the state `ni` with probability `pi`.
 
-# Note: After this procedure only the entries M[p,q] with 2i-1 < p < q
+# Warning
+After this procedure only the entries M[p,q] with 2i-1 < p < q
 will be correct. This is sufficient to calculate measurement probabilities
 for j > i.
 """

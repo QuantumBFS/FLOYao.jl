@@ -42,6 +42,27 @@ function majorana_expect(block::AbstractMatrix, locs, reg::MajoranaReg)
     return (- expval - offset_expval) / 4
 end
 
+# a little hack to attach a docstring to `expect(::AbstractBlock, ::MajoranaReg)`
+# without actually implementing it
+"""
+    expect(op::AbstractBlock, reg::MajoranaReg)
+    expect(op::AbstractBlock, (reg => circuit)::Pair{<:MajoranaReg,<:AbstractBlock})
+
+Get the expectation value of an operator, the second parameter can be a
+register `reg` or a pair of input register and circuit `reg => circuit`.
+
+    expect'(op::AbstractBlock, reg => circuit::) -> Pair{<:MajoranaReg,<:AbstractVector}
+    expect'(op::AbstractBlock, reg::MajoranaReg) -> MajoranaReg
+
+Obtain the gradient with respect to registers and circuit parameters. For pair
+input, the second return value is a pair of `gψ => gparams`, with `gψ` the gradient
+of input state and `gparams` the gradients of circuit parameters. For register
+input, the return value is a register.
+"""
+function Yao.expect(op::AbstractBlock, reg::MajoranaReg)
+    invoke(Yao.expect, Yao.expect, Tuple{AbstractBlock, AbstractRegister}, op, reg)
+end
+
 for BT in [:AbstractAdd, :(KronBlock{2}), :(PutBlock{2,1,ZGate})]
     @eval function Yao.expect(op::$BT, reg::MajoranaReg)
         YaoBlocks._check_size(reg, op)
@@ -74,6 +95,20 @@ function bitstring_probability(reg::MajoranaReg{T}, bit_string::DitStr{2,N,ST}) 
     return p > zero(T) ? p : zero(T) # floating point issues can cause very small probabilities to get negative.
 end
 
+"""
+    fidelity(reg1::MajoranaReg, reg2::MajoranaReg)
+
+The fidelity ``|⟨ψ|φ⟩|`` between the FLO states ``|ψ⟩`` and ``|φ⟩`` defined
+by `reg1` and `reg2`.
+
+!!! note
+    This definition differs from the standard definition ``|⟨φ|ψ⟩|²`` by a square 
+    root, but is consistent with the one used in `Yao.jl`
+
+!!! note
+    Computing gradients of the fidelity via `fidelity'(pair_or_reg1, pair_or_reg2)`
+    is not yet supported for `MajoranaReg`s.
+"""
 function Yao.fidelity(reg1::MajoranaReg{T1}, reg2::MajoranaReg{T2}) where {T1,T2}
     T = promote_type(T1, T2)
     nq = nqubits(reg1)

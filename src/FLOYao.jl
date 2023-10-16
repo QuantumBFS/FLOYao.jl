@@ -16,10 +16,24 @@
 =#
 
 """
-Support for fermionic linear optics circuits in Yao.jl. This is broadly based
-on [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010),
-but everything you need to know for the exact mathematical details of this
-implementation is also found in my wiki in `simulating-fermionic-linear-optic-circuits`.
+A [Yao.jl](https://github.com/QuantumBFS/Yao.jl) backend to efficiently simulate
+fermionic linear optics (FLO) circuits  based on
+[Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010)
+and [Disorder-assisted error correction in Majorana chains](https://arxiv.org/abs/1108.3845).
+FLO circuits are a class of quantum circuits that are closely related to
+non-interacting fermions and can be efficiently simulated on classical
+computers, similar to the way Clifford circuits can be efficiently classically
+simulated, as is done in [YaoClifford.jl](https://github.com/QuantumBFS/YaoClifford.jl).
+
+The goal of `FLOYao.jl` is that if you have code written in `Yao.jl` that only 
+uses [FLO gates](https://quantumbfs.github.io/FLOYao.jl/stable/supported_gates/)
+and other primitives that are efficiently simulatable in polynomial time and 
+space, that you can simply replace your `AbstractArrayReg` with a `MajoranaReg`
+and run exactly the same simulation, with the same code but exponentially faster.
+
+A brief introduction to fermionic linear optics circuits is found in the 
+[Documentation](https://yaoquantum.org/FLOYao.jl/stable/background/) and a more
+in-depth introduction in e.g. the two papers linked above.
 """
 module FLOYao
 

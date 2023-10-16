@@ -17,13 +17,14 @@ const PAGES = [
 ]
 
 makedocs(;
-    modules = [FLOYao,YaoAPI],
+    modules = [FLOYao,],
     format = Documenter.HTML(
         prettyurls = !("local" in ARGS),
         canonical="https://QuantumBFS.github.io/FLOYao.jl",
         assets=String[indigo],
     ),
     pages = PAGES,
+    checkdocs = :exports,
     repo = "https://github.com/QuantumBFS/FLOYao.jl",
     sitename = "FLOYao.jl",
 )
