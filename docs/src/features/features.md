@@ -30,20 +30,31 @@ FLOYao.product_state!
 
 ## Applying gates
 Application of [Supported gates](@ref) to [`MajoranaReg`](@ref)'s works 
-as it does in `Yao.jl`
+as it does in [`Yao.jl`](https://docs.yaoquantum.org/stable/man/blocks.html#Base.:|%3E-Tuple{AbstractRegister,%20AbstractBlock})
 
-```@docs
-YaoAPI.apply! 
+```julia
+reg = FLOYao.zero_state(2)
+gate = put(2, 1 => X)
+
+# using apply!
+apply!(reg, gate)
+
+# or using the pipe syntax
+reg |> gate
+
+# or the non-mutating version
+result = apply(reg, gate)
 ```
 
 ## Measuring expectation values
 The same goes measuring expectation values 
 ```@docs
-expect 
+expect
 ```
 where (for now) `op` is restricted to be an observable quadratic in the 
-Majorana operators (see [Known restrictions](@ref)).
-
+Majorana operators (see [Known restrictions](@ref)). 
+See the section about [`expect`](https://docs.yaoquantum.org/stable/man/blocks.html#YaoAPI.expect-Tuple{AbstractBlock,%20DensityMatrix})
+in the `Yao.jl` documentation for the details.
 
 ## Sampling
 Samples in the computational basis can be obtained with the same functions as 
@@ -52,6 +63,22 @@ in `Yao.jl`:
 ```@docs
 measure(::MajoranaReg)
 measure!(::MajoranaReg)
+```
+
+## Fidelities and bitstring probabilities
+Fidelities between two `MajoranaReg`s can be computed the same way as in 
+`Yao.jl`:
+
+```@docs
+fidelity(::MajoranaReg, ::MajoranaReg)
+```
+
+Under the hood this function uses a non-exported function to compute the 
+probability of obtaining a given `bit_string` as an output when measuring in 
+the computational basis:
+
+```@docs
+FLOYao.bitstring_probability
 ```
 
 ## Non-exported functions

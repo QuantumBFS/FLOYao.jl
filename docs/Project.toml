@@ -2,8 +2,10 @@
 DocThemeIndigo = "8bac0ac5-51bf-41f9-885e-2bf1ac2bec5f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FLOYao = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
+Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoAPI = "0843a435-28de-4971-9e8b-a9641b2983a8"
 YaoArrayRegister = "e600142f-9330-5003-8abb-0ebd767abc51"
 
 [compat]
 DocThemeIndigo = "0.1.1"
+Documenter = "1"

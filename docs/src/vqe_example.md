@@ -36,7 +36,7 @@ hamiltonian = T + U
 summary(hamiltonian)
 
 # output
-"Add{2}"
+"YaoBlocks.Add{2}"
 ```
 
 
