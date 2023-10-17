@@ -19,14 +19,14 @@ This implies the normal fermionic creation and annihilation operators are given 
 ```
 and products of two Majorana operators are of the form
 ```math
-    σ_i \left(∏_{i<j<k} Z_k \right) σ_k
+    σ_i \left(∏_{i<j<k} Z_j \right) σ_k
     \quad \textrm{or} \quad
     Z_i
 ```
 with $σ_i, σ_k ∈ \{X, Y\}$.
 
-Any unitary that takes all Majorana operators to a linear combination of Majorana operators
-under conjugation, i.e. that satisfies
+Any unitary that takes all Majorana operators to a linear combination of
+Majorana operators under conjugation, i.e. that satisfies
 ```math
     U γ_i U^† = R_i^j γ_j
 ```
@@ -40,13 +40,13 @@ with
 ```
 it is a FLO unitary with $R ∈ SO(2n)$.
 
-But note, that not all FLO unitaries are of that form. For example $X_i$ is also a FLO 
-gate since it either commutes or anti-commutes with all Majorana operators, but the associated
-matrix $R$ always has determinant $-1$.
+But note, that not all FLO unitaries are of that form. For example, $X_i$ is
+also a FLO gate since it either commutes or anti-commutes with all Majorana
+operators, but the associated matrix $R$ always has determinant $-1$.
 
-Calculating the expectation values of hamiltonians like the one above when evolving the 
-vacuum state with FLO circuits is efficiently possible. First evolve the 
-Hamiltonian in the Heisenber picture to
+Calculating the expectation values of hamiltonians like the one above when
+evolving the vacuum state with FLO circuits is efficiently possible. First
+evolve the Hamiltonian in the Heisenber picture to
 ```math
     UHU^† = \frac{i}{4} R^{m}_{i} R^{n}_{j} H^{ij} γ_{m} γ_{n} 
            =: \frac{i}{4} \tilde H^{mn} γ_{m} γ_{n}.
