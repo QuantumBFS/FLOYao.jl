@@ -103,54 +103,58 @@ function paulibasis2majoranasquares(P::AbstractVector, locs=1:Int(log(4, length(
     
     areconsecutive(locs) || throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
     
+
+    threshold = √eps(real(eltype(P)))
+    nonzero_indices = filter(0x1:UInt32(4^n-1)) do i
+        abs(P[i+1]) >= threshold
+    end
+
     out = zeros(real(eltype(P)), 2n, 2n)
-    for i in 0x1:UInt32(4^n-1)
+    for i in nonzero_indices
         coeff = P[i+1]
-        if abs(coeff) >= √eps(eltype(out)) # really only look at non-zero coeffs
-            firstmajorana = -1 # these will index into the 2n×2n matrix holding the majorana coeffs
-            secondmajorana = -1
-            for k in n-1:-1:0 
-                opi = i % 4 # i gets shifted 2 bits to the right in every iteration 
-                if secondmajorana == -1
-                    if opi == 1 # so we got an X operator
-                        secondmajorana = 2k # so the 2nd majoran op is of the 1st type
-                        @debug "second operator is γ1 on site $k"
-                    elseif opi == 2 # so we got an Y operator
-                        secondmajorana = 2k+1 # so the 2nd majorana op is of the 2nd type
-                        coeff *= -1
-                        @debug "second operator is γ2 on site $k"
-                    elseif opi == 3 # so we got a Z operator
-                        firstmajorana = 2k+1    # so both majoranas act on the site
-                        secondmajorana = 2k
-                        @debug "second operator is γ2 on site $k"
-                        @debug "first operator is γ1 on site $k"
-                    else
-                        @debug "nothing on site $k"
-                    end
-                elseif firstmajorana == -1
-                    if opi == 1
-                        firstmajorana = 2k+1
-                        @debug "first operator is γ2 on site $k"
-                    elseif opi == 2
-                        firstmajorana = 2k
-                        @debug "first operator is γ1 on site $k"
-                    elseif opi == 3
-                        coeff *= -1
-                        @debug "nothing on site $k"
-                    else
-                        throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
-                    end
-                elseif opi != 0
-                    throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
+        firstmajorana = -1 # these will index into the 2n×2n matrix holding the majorana coeffs
+        secondmajorana = -1
+        for k in n-1:-1:0 
+            opi = i % 4 # i gets shifted 2 bits to the right in every iteration 
+            if secondmajorana == -1
+                if opi == 1 # so we got an X operator
+                    secondmajorana = 2k # so the 2nd majorana op is of the 1st type
+                    @debug "second operator is γ1 on site $k"
+                elseif opi == 2 # so we got an Y operator
+                    secondmajorana = 2k+1 # so the 2nd majorana op is of the 2nd type
+                    coeff *= -1
+                    @debug "second operator is γ2 on site $k"
+                elseif opi == 3 # so we got a Z operator
+                    firstmajorana = 2k+1    # so both majoranas act on the site
+                    secondmajorana = 2k
+                    @debug "second operator is γ2 on site $k"
+                    @debug "first operator is γ1 on site $k"
                 else
                     @debug "nothing on site $k"
                 end
-                i = i >> 2
+            elseif firstmajorana == -1
+                if opi == 1
+                    firstmajorana = 2k+1
+                    @debug "first operator is γ2 on site $k"
+                elseif opi == 2
+                    firstmajorana = 2k
+                    @debug "first operator is γ1 on site $k"
+                elseif opi == 3
+                    coeff *= -1
+                    @debug "nothing on site $k"
+                else
+                    throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
+                end
+            elseif opi != 0
+                throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
+            else
+                @debug "nothing on site $k"
             end
-            firstmajorana == -1 && throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
-            out[firstmajorana+1, secondmajorana+1] = -2 * real(coeff)
-            out[secondmajorana+1, firstmajorana+1] =  2 * real(coeff)
+            i = i >> 2
         end
+        firstmajorana == -1 && throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
+        out[firstmajorana+1, secondmajorana+1] = -2 * real(coeff)
+        out[secondmajorana+1, firstmajorana+1] =  2 * real(coeff)
     end
     return out
 end
