@@ -1,13 +1,13 @@
 #=
 #  Authors:   Jan Lukas Bosse
 #  Copyright: 2022 Phasecraft Ltd.
-#  
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,15 +30,15 @@ function majorana_expect(block::AbstractMatrix, locs, reg::MajoranaReg)
     fullH = zero(reg.state)
     matlocs = (2*(locs[1]-1)+1:2(locs[end]))
     fullH[matlocs,matlocs] .= block
-    
+
     expval = sum(1:nqubits(reg), init=zero(eltype(reg.state))) do i
         reg.state[:,2i] ⋅ (fullH * reg.state[:,2i-1]) - reg.state[:,2i-1] ⋅ (fullH * reg.state[:,2i])
     end
-    
+
     offset_expval = sum(1:nqubits(reg), init=zero(eltype(reg.state))) do i
         - reg.state[:,2i] ⋅ (fullH * reg.state[:,2i]) - reg.state[:,2i-1] ⋅ (fullH * reg.state[:,2i-i])
     end |> imag
-    
+
     return (- expval - offset_expval) / 4
 end
 

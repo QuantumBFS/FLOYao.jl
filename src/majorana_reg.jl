@@ -19,7 +19,7 @@
 # The actual Register Definition
 # ------------------------------
 """
-    MajoranaReg{T} <: AbstractRegister{2}
+    MajoranaReg{T,MT<:AbstractMatrix{T}} <: AbstractRegister{2}
     MajoranaReg(state::AbstractMatrix{T<:Real})
 
 A register holding the "state" of a Majorana operators when propagating through
@@ -30,8 +30,8 @@ The `MajoranaReg` constructor will not initialize the `state` matrix. It is
 recommended to use `FLOYao.zero_state` or `FLOYao.product_state` to produce
 your initial state.
 """
-struct MajoranaReg{T<:Real} <: AbstractRegister{2}
-    state::Matrix{T}
+struct MajoranaReg{T<:Real,MT<:AbstractMatrix{T}} <: AbstractRegister{2}
+    state::MT
 end
 
 
@@ -43,8 +43,8 @@ Yao.nactive(reg::MajoranaReg) = Yao.nqubits(reg)
 Yao.nbatch(reg::MajoranaReg) = 1
 Yao.nremain(reg::MajoranaReg) = 0
 Yao.state(reg::MajoranaReg) = reg.state
-Base.eltype(::MajoranaReg{T}) where {T} = T
-Yao.datatype(::MajoranaReg{T}) where {T} = T
+Base.eltype(::MajoranaReg{T,MT}) where {T,MT} = T
+Yao.datatype(::MajoranaReg{T,MT}) where {T,MT} = T
 Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
 Base.similar(reg::MajoranaReg) = MajoranaReg(similar(reg.state))
 

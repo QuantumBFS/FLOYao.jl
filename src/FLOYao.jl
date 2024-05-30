@@ -55,6 +55,7 @@ include("apply_composite.jl")
 include("expect.jl")
 include("measure.jl")
 include("auto_diff.jl")
+include("cufloyao.jl")
 
 end # module
 
