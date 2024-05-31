@@ -44,7 +44,7 @@ for j > i.
 """
 function update_covariance_matrix!(M, i, pi, ni)
     n = size(M,1)
-    for p in 2i+1:n 
+    for p in 2i+1:n
         for q in p+1:n
             M[p,q] += (-1)^ni * M[2i-1,q] * M[2i,p] / (2pi)
             M[p,q] -= (-1)^ni * M[2i-1,p] * M[2i,q] / (2pi)
@@ -54,7 +54,7 @@ function update_covariance_matrix!(M, i, pi, ni)
 end
 
 """
-    sample!(covmat, locs=1:size(covmat,1)÷2, ids=sortperm(locs), rng=GLOBAL_RNG)
+    sample(covmat, locs=1:size(covmat,1)÷2, ids=sortperm(locs), rng=GLOBAL_RNG)
 
 Take a computational basis state sample from a FLO state with given `cov`arianve` mat`rix
 

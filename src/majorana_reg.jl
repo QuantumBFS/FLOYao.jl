@@ -1,13 +1,13 @@
 #=
 #  Authors:   Jan Lukas Bosse
 #  Copyright: 2022 Phasecraft Ltd.
-#  
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,7 +87,7 @@ Converts a `2n×2n` MajoranaReg `reg` into a `2^n` ArrayReg.
 
 # Note
 This implementation is not very clever and should mainly be used for debugging
-purposes with small numbers of qubits. It pipes a random state ``|ψ⟩`` 
+purposes with small numbers of qubits. It pipes a random state ``|ψ⟩``
 through the projector ``U|Ω⟩⟨Ω|U^†`` which may give inaccurate results if 
 ``⟨ψ|U|ψ⟩`` is very small.
 """
@@ -100,8 +100,8 @@ function majorana2arrayreg(reg::MajoranaReg)
     # the projector U|Ω⟩⟨Ω|U^† 
     areg = Yao.rand_state(Complex{eltype(reg)}, nq)
     for i in 1:nq
-        γ_i1 = majoranaop(nq, reg.state[:,2i-1])
-        γ_i2 = majoranaop(nq, reg.state[:,2i])
+        γ_i1 = majoranaop(nq, @view reg.state[:,2i-1])
+        γ_i2 = majoranaop(nq, @view reg.state[:,2i])
         circuit = 1im*chain(nq, γ_i2, γ_i1) + igate(nq)
         areg |> circuit
     end
