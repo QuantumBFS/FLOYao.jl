@@ -28,6 +28,16 @@ function Yao.instruct!(reg::CuMajoranaReg, gate::AbstractMatrix, locs)
     reg.state[matlocs,:] .= W * reg.state[matlocs,:]
 end
 
+
+# Time-Evolution block specialisations
+# ------------------------------------
+function YaoBlocks.unsafe_apply!(reg::CuMajoranaReg, b::TimeEvolution)
+    H = yaoham2majoranasquares(b.H)
+    expH = exp(b.dt .* H) |> cu # maybe ExponetialUtilities can speed this up on GPU?
+    reg.state .= expH * reg.state
+    return reg
+end
+
 function majorana2arrayreg(reg::CuMajoranaReg)
     nq = nqubits(reg)
 
@@ -70,6 +80,28 @@ function covariance_matrix(reg::CuMajoranaReg)
     return state * reg.state'
 end
 
+function swap_and_sign(arr::Matrix)
+    n = size(arr, 1) ÷ 2
+    for i in 1:2n
+        for j in 2:2:2n
+            arr[i,j], arr[i,j-1] = arr[i,j-1], -arr[i,j]
+        end
+    end
+end
+
+function swap_and_sign(arr::CuArray)
+    n = size(arr, 1) ÷ 2
+    threads = n
+    blocks = 2n
+    @inline function kernel(arr)
+        i, j = blockIdx().x, 2 * threadIdx().x
+        arr[i,j], arr[i,j-1] = arr[i,j-1], -arr[i,j]
+        nothing
+    end
+    @cuda threads=threads blocks=blocks kernel(state)
+    return arr
+end
+
 # This seems to be not really making fully use of the GPU and is barely faster
 # than on the CPU. Also for _very_ large systems doing thousands of blocks 
 # seems to be disallowed.
@@ -93,3 +125,6 @@ function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     @cuda threads=n-2i-1 blocks=n-2i kernel!(M)
     return M
 end
+
+
+
