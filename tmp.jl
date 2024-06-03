@@ -12,14 +12,34 @@ end
 
 function swap_and_sign!(A::CuArray)
     n = size(A, 1) ÷ 2
-    threads = n
-    blocks = 2n
-    @inline function kernel(data)
-        i, j = blockIdx().x, 2 * threadIdx().x
-        data[i,j], data[i,j-1] = data[i,j-1], -data[i,j]
+    @inline function kernel_fun!(data)
+        i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+        i_stride = gridDim().x * blockDim().x
+        
+        # multiply with 2 here for correct indexing.
+        j = 2*((blockIdx().y-1) * blockDim().y + threadIdx().y) 
+        j_stride = 2 * gridDim().y * blockDim().y
+
+        while i <= 2n
+            while j <= 2n
+                data[i,j], data[i,j-1] = data[i,j-1], -data[i,j]
+                j += j_stride
+            end
+            i += i_stride
+        end
         nothing
     end
-    @cuda threads=threads blocks=blocks kernel(A)
+    kernel = @cuda launch=false kernel_fun!(A)
+    config = launch_configuration(kernel.fun)
+
+    # this seemed to give the faster iteration order
+    threads_x = min(2n, config.threads)
+    threads_y = min(fld(config.threads, threads_x), n) # put all remaining threads in here
+    blocks_y = cld(n, threads_y)
+    blocks_x = cld(2n, threads_x)
+    threads = (threads_x, threads_y)
+    blocks = (blocks_x, blocks_y)
+    CUDA.@sync kernel(A; threads, blocks)
     nothing
 end
 
@@ -33,7 +53,7 @@ function swap_and_sign_views!(A::AbstractMatrix)
     nothing
 end
 
-arr = rand(1000, 1000)
+arr = rand(10000, 10000)
 cuarr = arr |> cu
 
 
