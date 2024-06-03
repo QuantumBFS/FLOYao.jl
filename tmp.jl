@@ -1,4 +1,5 @@
 using CUDA, BenchmarkTools
+using KernelAbstractions
 
 function swap_and_sign!(A::Matrix)
     n = size(A, 1) ÷ 2
@@ -43,6 +44,18 @@ function swap_and_sign!(A::CuArray)
     nothing
 end
 
+function swap_and_sign_KA!(A::CuArray)
+    backend = KernelAbstractions.get_backend(A)
+    kernel! = swap_and_sign_kernel!(backend)
+    kernel!(A, ndrange=(size(A, 1) , size(A,2) ÷ 2))
+end
+
+@kernel function swap_and_sign_kernel!(A)
+    i, j = @index(Global, NTuple)
+    j = 2 * j
+    A[i,j], A[i,j-1] = A[i,j-1], -A[i,j]
+end
+
 function swap_and_sign_views!(A::AbstractMatrix)
     n = size(A, 1) ÷ 2
     for j in 2:2:2n
@@ -53,7 +66,7 @@ function swap_and_sign_views!(A::AbstractMatrix)
     nothing
 end
 
-arr = rand(10000, 10000)
+arr = rand(1000, 1000)
 cuarr = arr |> cu
 
 
