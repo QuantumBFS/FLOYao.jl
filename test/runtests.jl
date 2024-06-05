@@ -1,13 +1,13 @@
 #=
 #  Authors:   Jan Lukas Bosse
 #  Copyright: 2022 Phasecraft Ltd.
-#  
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -326,7 +326,6 @@ end
     @test fidelity(majorana2arrayreg(in_mreg), in_areg) ≈ 1.
 end
 
-# this is where I have to pick it up
 @testset "fidelity" begin
     nq = 5
     mreg1 = FLOYao.rand_state(nq)
@@ -357,18 +356,18 @@ end
     θ = π/8
     xxg = kron(nq, 1 => X, 2 => Y)
     rg = rot(xxg, θ)
-    push!(circuit, rg)  
+    push!(circuit, rg)
     push!(circuit, put(nq, 3=>Rz(0.5)))
-    push!(circuit, rg)  
+    push!(circuit, rg)
 
     θ = π/5
     xxg = kron(nq, 2 => X, 3 => Z, 4 => Y)
     rg = rot(xxg, θ)
-    push!(circuit, rg)  
+    push!(circuit, rg)
     push!(circuit, put(nq, 3=>Rz(0.5)))
     push!(circuit, put(nq, 1=>Z))
     push!(circuit, put(nq, 4=>X))
-    push!(circuit, rg)  
+    push!(circuit, rg)
 
     mreg = FLOYao.product_state(bit"1001")
     areg = product_state(bit"1001")

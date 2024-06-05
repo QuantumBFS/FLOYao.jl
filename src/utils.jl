@@ -343,7 +343,7 @@ compact groups](https://arxiv.org/pdf/math-ph/0609050.pdf)
 """
 function random_orthogonal_matrix(::Type{T}, n) where {T}
     out = Matrix{T}(I(n))
-    for i in 2:n 
+    for i in 2:n
         v, s = random_unit_vector(T, i, n)
         out .*= -s
         out .-= 2v .* (v' * out)

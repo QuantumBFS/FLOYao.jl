@@ -8,9 +8,27 @@ export cu, cpu
 const CuMajoranaReg{T} = MajoranaReg{T,CuArray{T,2,CUDA.DeviceMemory}} where {T}
 const CPUMajoranaReg{T} = MajoranaReg{T,Matrix{T}} where {T}
 
+# Register creation and transfer
+# ------------------------------
 CUDA.cu(reg::CPUMajoranaReg{T}) where T = MajoranaReg(reg.state |> CUDA.cu)
 Yao.cpu(reg::CuMajoranaReg{T}) where T = MajoranaReg(Array(reg.state))
 
+"""
+    cuzero_state([T=Float32,] n)
+
+The GPU version of [`FLOYao.zero_state`](@ref).
+"""
+function cuzero_state(::Type{T}, n::Integer) where {T}
+    state = CUDA.zeros(T, 2n, 2n)
+    state[diagind(state)] .= one(T)
+    return MajoranaReg(state)
+end
+
+cuzero_state(n) = cuzero_state(Float32, n)
+
+function zero_state_like(reg::AbstractRegister)
+    return zero_state(real(datatype(reg)), nqubits(reg))
+end
 
 # Fallback for generic matrix gates. This is _much_ slower than the explicitely
 # defined previous gates, so you do profit from defining unsafe_apply! and 
@@ -87,8 +105,11 @@ end
 function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     backend = KernelAbstractions.get_backend(M)
     kernel! = update_covariance_matrix_kernel!(backend)
-    kernel!(M, i, pi, ni, ndrange=(size(M,1)-2i, size(M,1)-2i-1))
-    return M
+    return if size(M, 1) <= 2i # nothing to do for last qubit
+        M
+    else
+        kernel!(M, i, pi, ni, ndrange=(size(M,1)-2i, size(M,1)-2i-1))
+    end
 end
 
 
@@ -132,11 +153,11 @@ function Yao.AD.backward_params!(st::Tuple{<:CuMajoranaReg,<:CuMajoranaReg},
     return nothing
 end
 
-function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
+function Yao.AD.expect_g(op::AbstractAdd, in::CuMajoranaReg)
     ham = yaoham2majoranasquares(op) |> cu
     inδ = copy(in)
     inδ.state .= ham * inδ.state
-    for i in 1:nqudits(in) 
+    for i in 1:nqudits(in)
         ψ1, ψ2 = inδ.state[:,2i-1], inδ.state[:,2i]
         inδ.state[:,2i-1] .= -ψ2
         inδ.state[:,2i] .= ψ1
@@ -145,8 +166,48 @@ function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
     return inδ
 end
 
+# Fidelities and computational basis measurements
+# -----------------------------------------------
+function bitstring_probability(reg::CuMajoranaReg{T}, bit_string::DitStr{2,N,ST}) where {T,N,ST}
+    @assert nqubits(reg) == N
+    p = one(T)
+    M = covariance_matrix(reg)
+    for i in 1:N
+        ni = bit_string[i]
+        pi = CUDA.@allowscalar (1 + (-1)^ni * M[2i-1,2i]) / 2
+        pi ≈ 0 && return zero(T)
+        p *= pi
+        update_covariance_matrix!(M, i, pi, ni)
+    end
+    return p > zero(T) ? p : zero(T) # floating point issues can cause very small probabilities to get negative.
+end
 
+@inline function sample(covmat::CuMatrix, locs, ids,
+                        rng=Random.GLOBAL_RNG)
+    out = BigInt(0)
+    nq = length(locs)
+    for i in 1:nq
+        pi = CUDA.@allowscalar (1 + covmat[2locs[ids[i]]-1,2locs[ids[i]]]) / 2
+        ni = rand(rng) > pi
+        out += ni * 2^(ids[i]-1)
+        update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
+    end
+    return out
+end
 
+# a slightly faster version, when all qubits get sampled in their normal
+# order
+@inline function sample(covmat::CuMatrix, rng=Random.GLOBAL_RNG)
+    out = BigInt(0)
+    nq = size(covmat,1) ÷ 2
+    for i in 1:nq
+        pi = CUDA.@allowscalar (1 + covmat[2i-1,2i]) / 2
+        ni = rand(rng) > pi
+        out += ni * 2^(i-1)
+        update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
+    end
+    return out
+end
 
 # Benchmark functions
 # -------------------
@@ -159,7 +220,7 @@ function gpu_benchmark_fun(n)
     reg = CUDA.rand(2n, 2n) |> MajoranaReg
     covmat = CUDA.@sync covariance_matrix(reg)
 end
-
+#=
 function cpu_benchmark_fun(n)
     reg = rand(2n, 2n) |> MajoranaReg
     i = rand(1:n)
@@ -177,6 +238,7 @@ function gpu_benchmark_fun(n)
     #covmat = CUDA.@sync covariance_matrix(reg)
     CUDA.@sync FLOYao.update_covariance_matrix!(reg.state, i, pi, ni)
 end
+=#
 #=
 function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     n = size(M,1)
