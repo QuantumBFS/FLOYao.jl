@@ -1,5 +1,7 @@
 using CUDA
 using CUDA.CUSPARSE
+using KernelAbstractions
+using ExponentialUtilities
 
 export cu, cpu
 
@@ -32,8 +34,9 @@ end
 # Time-Evolution block specialisations
 # ------------------------------------
 function YaoBlocks.unsafe_apply!(reg::CuMajoranaReg, b::TimeEvolution)
-    H = yaoham2majoranasquares(b.H)
-    expH = exp(b.dt .* H) |> cu # maybe ExponetialUtilities can speed this up on GPU?
+    H = yaoham2majoranasquares(b.H) |> cu
+    H .*= b.dt
+    expH = exponential!(H) # maybe ExponetialUtilities can speed this up on GPU?
     reg.state .= expH * reg.state
     return reg
 end
@@ -55,65 +58,126 @@ function majorana2arrayreg(reg::CuMajoranaReg)
     normalize!(areg)
     return areg
 end
-#=
-"Majorana op on `n` Majorana sites for orbital `ψ`"
-function majoranaop(n, ψ::CuArray)
-    ψ = ψ |> Vector
-    return sum([ψ[i] * majoranaop(n, i) for i in eachindex(ψ)])
-end
-=#
+
 # Can probably make this even faster by writing out what
 # happens in index notation and doing it _all_ in the kernel
+@kernel function swap_and_sign_kernel!(A)
+    i, j = @index(Global, NTuple)
+    j = 2 * j
+    A[i,j], A[i,j-1] = A[i,j-1], -A[i,j]
+end
+
 function covariance_matrix(reg::CuMajoranaReg)
     nq = nqubits(reg)
     state = reg.state |> copy
-    threads = nq
-    blocks = 2nq
-    @inline function kernel(state)
-        i, j = blockIdx().x, 2 * threadIdx().x
-        tmp = state[i,j]
-        state[i,j] = state[i,j-1]
-        state[i,j-1] = -tmp
-        nothing
-    end
-    @cuda threads=threads blocks=blocks kernel(state)
+    backend = KernelAbstractions.get_backend(state)
+    kernel! = swap_and_sign_kernel!(backend)
+    kernel!(state, ndrange=(size(state, 1), size(state,2) ÷ 2))
     return state * reg.state'
 end
 
-function swap_and_sign(arr::Matrix)
-    n = size(arr, 1) ÷ 2
-    for i in 1:2n
-        for j in 2:2:2n
-            arr[i,j], arr[i,j-1] = arr[i,j-1], -arr[i,j]
-        end
-    end
+@kernel function update_covariance_matrix_kernel!(M, i, pi, ni)
+    p, q = @index(Global, NTuple)
+    p += 2i
+    q += 2i + 1
+    offset = (-1)^ni * (M[2i-1,q] * M[2i,p] - M[2i-1,p] * M[2i,q]) / (2pi)
+    M[p,q] += ifelse(q>p, offset, zero(eltype(M)))
 end
 
-function swap_and_sign(arr::CuArray)
-    n = size(arr, 1) ÷ 2
-    threads = n
-    blocks = 2n
-    @inline function kernel(arr)
-        i, j = blockIdx().x, 2 * threadIdx().x
-        arr[i,j], arr[i,j-1] = arr[i,j-1], -arr[i,j]
-        nothing
-    end
-    @cuda threads=threads blocks=blocks kernel(state)
-    return arr
+function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
+    backend = KernelAbstractions.get_backend(M)
+    kernel! = update_covariance_matrix_kernel!(backend)
+    kernel!(M, i, pi, ni, ndrange=(size(M,1)-2i, size(M,1)-2i-1))
+    return M
 end
 
-# This seems to be not really making fully use of the GPU and is barely faster
-# than on the CPU. Also for _very_ large systems doing thousands of blocks 
-# seems to be disallowed.
+
+# Expect specialisations
+# ----------------------
+# For actual performance, it would be better if we could construct block on the GPU!
+# Also, the actual logic in majorana_expect can probably be made faster on a GPU
+function majorana_expect(block::AbstractMatrix, reg::CuMajoranaReg)
+    block = block |> cu
+
+    expval = sum(1:nqubits(reg), init=zero(eltype(reg.state))) do i
+        @views reg.state[:,2i] ⋅ (block * reg.state[:,2i-1]) - reg.state[:,2i-1] ⋅ (block * reg.state[:,2i])
+    end
+
+    offset_expval = sum(1:nqubits(reg), init=zero(eltype(reg.state))) do i
+        @views - reg.state[:,2i] ⋅ (block * reg.state[:,2i]) - reg.state[:,2i-1] ⋅ (block * reg.state[:,2i-i])
+    end |> imag
+
+    return (- expval - offset_expval) / 4
+end
+
+# Autodiff support
+# ----------------
+function Yao.AD.backward_params!(st::Tuple{<:CuMajoranaReg,<:CuMajoranaReg},
+                                 block::Rotor, collector)
+    out, outδ = st
+    ham = Yao.AD.generator(block)
+    majoranaham = yaoham2majoranasquares(ham) |> cu
+    g = fast_overlap(outδ.state, majoranaham, out.state) / 4
+    pushfirst!(collector, g)
+    return nothing
+end
+
+function Yao.AD.backward_params!(st::Tuple{<:CuMajoranaReg,<:CuMajoranaReg},
+                                 block::TimeEvolution, collector)
+    out, outδ = st
+    ham = block.H
+    majoranaham = yaoham2majoranasquares(ham) |> cu
+    g = fast_overlap(outδ.state, majoranaham, out.state) / 2
+    pushfirst!(collector, g)
+    return nothing
+end
+
+function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
+    ham = yaoham2majoranasquares(op) |> cu
+    inδ = copy(in)
+    inδ.state .= ham * inδ.state
+    for i in 1:nqudits(in) 
+        ψ1, ψ2 = inδ.state[:,2i-1], inδ.state[:,2i]
+        inδ.state[:,2i-1] .= -ψ2
+        inδ.state[:,2i] .= ψ1
+    end
+    inδ.state[:,1:end] .*= -1
+    return inδ
+end
+
+
+
+
+# Benchmark functions
+# -------------------
+function cpu_benchmark_fun(n)
+    reg = rand(2n, 2n) |> MajoranaReg
+    covmat = covariance_matrix(reg)
+end
+
+function gpu_benchmark_fun(n)
+    reg = CUDA.rand(2n, 2n) |> MajoranaReg
+    covmat = CUDA.@sync covariance_matrix(reg)
+end
+
+function cpu_benchmark_fun(n)
+    reg = rand(2n, 2n) |> MajoranaReg
+    i = rand(1:n)
+    pi = rand()
+    ni = rand(Bool)
+    #covmat = covariance_matrix(reg)
+    update_covariance_matrix!(reg.state, i, pi, ni)
+end
+
+function gpu_benchmark_fun(n)
+    reg = CUDA.rand(2n, 2n) |> MajoranaReg
+    i = rand(1:n)
+    pi = rand()
+    ni = rand(Bool)
+    #covmat = CUDA.@sync covariance_matrix(reg)
+    CUDA.@sync FLOYao.update_covariance_matrix!(reg.state, i, pi, ni)
+end
 #=
-    n = size(M,1)
-    for p in 2i+1:n
-        for q in p+1:n
-            M[p,q] += (-1)^ni * M[2i-1,q] * M[2i,p] / (2pi)
-            M[p,q] -= (-1)^ni * M[2i-1,p] * M[2i,q] / (2pi)
-        end
-    end
-=#
 function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     n = size(M,1)
     @inline function kernel!(M)
@@ -125,6 +189,6 @@ function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     @cuda threads=n-2i-1 blocks=n-2i kernel!(M)
     return M
 end
-
+=#
 
 
