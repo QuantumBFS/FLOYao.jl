@@ -94,7 +94,7 @@ and finally create a register in the computational zero state via
 reg = FLOYao.zero_state(nq)
 
 # output
-MajoranaReg{Float64} with 4 qubits:
+MajoranaReg{Float64, Matrix{Float64}} with 4 qubits:
  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0
  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0
  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0
@@ -111,7 +111,7 @@ Applying the circuit to the register works then exactly the same way as for a no
 apply(reg, circuit)
 
 # output
-MajoranaReg{Float64} with 4 qubits:
+MajoranaReg{Float64, Matrix{Float64}} with 4 qubits:
  -1.0  -0.0                 -0.0                 …  -0.0                 -0.0
  -0.0  -0.9238795325112867   0.3826834323650898     -0.0                 -0.0
   0.0   0.3826834323650898   0.9238795325112867      0.0                  0.0
@@ -137,7 +137,7 @@ or even gradients of these expectation values with respect to the circuit parame
 state_grad, params_grad = expect'(hamiltonian, reg => circuit)
 
 # output
-MajoranaReg{Float64}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
+MajoranaReg{Float64, Matrix{Float64}}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
 ```
 
 ## Contents

@@ -1,4 +1,10 @@
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 ExponentialUtilities = "d4d017d3-3776-5f7e-afef-a10c40355c18"
+FLOYao = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
+YaoArrayRegister = "e600142f-9330-5003-8abb-0ebd767abc51"

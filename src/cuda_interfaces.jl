@@ -1,5 +1,5 @@
 """
-    FLOYao.cpu(reg)
+    FLOYao.cu(reg)
 
 Upload the register state from CPU to GPU.
 """
@@ -18,6 +18,13 @@ function cpu end
 The GPU version of [`FLOYao.zero_state`](@ref).
 """
 function cuzero_state end
+
+"""
+    FLOYao.cuone_state([T=Float32,] n)
+
+The GPU version of [`FLOYao.one_state`](@ref).
+"""
+function cuone_state end
 
 """
     FLOYao.cuproduct_state([T=Float64,] bit_str::DitStr{2})

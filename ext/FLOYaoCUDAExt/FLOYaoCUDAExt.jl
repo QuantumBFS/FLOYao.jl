@@ -8,46 +8,76 @@ using KernelAbstractions
 using Yao
 using LinearAlgebra
 
-import FLOYao: majoranaop, cu, cpu, cuproduct_state, cuzero_state
+import CUDA: cu
+import Yao: cpu
+
+import FLOYao: majoranaop, cuproduct_state, cuzero_state, cuone_state
+import FLOYao: one_state!, zero_state!, product_state!, majorana2arrayreg
+import FLOYao: covariance_matrix, update_covariance_matrix!, sample,
+    majorana_expect, bitstring_probability, yaoham2majoranasquares, fast_overlap
+
 
 const CuMajoranaReg{T} = MajoranaReg{T,CuArray{T,2,CUDA.DeviceMemory}} where {T}
 const CPUMajoranaReg{T} = MajoranaReg{T,Matrix{T}} where {T}
 
 # Register creation and transfer
 # ------------------------------
-cu(reg::CPUMajoranaReg{T}) where T = MajoranaReg(reg.state |> CUDA.cu)
+cu(reg::CPUMajoranaReg{T}) where T = MajoranaReg(reg.state |> cu)
 cpu(reg::CuMajoranaReg{T}) where T = MajoranaReg(Array(reg.state))
 
 
 # majorana_reg.jl extensions
 # --------------------------
-function FLOYao.cuzero_state(::Type{T}, n::Integer) where {T}
+function cuzero_state(::Type{T}, n::Integer) where {T}
     state = CUDA.zeros(T, 2n, 2n)
     state[diagind(state)] .= one(T)
     return MajoranaReg(state)
 end
 
-FLOYao.cuzero_state(n) = FLOYao.cuzero_state(Float32, n)
+cuzero_state(n) = cuzero_state(Float32, n)
 
-function FLOYao.cuproduct_state(::Type{T}, bit_str::DitStr{2,N,IT}) where {N,T,IT}
+@kernel function one_state_kernel!(state)
+    i, j = @index(Global, NTuple)
+    if i != j
+        state[i,j] = 0
+    else
+        state[i,j] = (i % 4 == 1 ||  i % 4 == 0) ? 1 : -1
+    end
+end
+
+function one_state!(reg::CuMajoranaReg{T}) where {T}
+    backend = KernelAbstractions.get_backend(reg.state)
+    kernel! = one_state_kernel!(backend)
+    kernel!(reg.state, ndrange=size(reg.state))
+    return reg
+end
+
+function cuone_state(::Type{T}, n::Integer) where {T}
+    reg = CUDA.CuMatrix{T}(undef, 2n, 2n) |> MajoranaReg
+    return one_state!(reg)
+end
+
+cuone_state(n) = cuone_state(Float32, n)
+
+function cuproduct_state(::Type{T}, bit_str::DitStr{2,N,IT}) where {N,T,IT}
     reg = MajoranaReg(CuMatrix{T}(undef, 2N, 2N))
     product_state!(reg, bit_str)
     return reg
 end
 
-FLOYao.cuproduct_state(bit_str) = FLOYao.cuproduct_state(Float32, bit_str)
+cuproduct_state(bit_str) = cuproduct_state(Float32, bit_str)
 
 # vector input
-function FLOYao.cuproduct_state(::Type{T}, bit_configs::AbstractVector) where {T}
-    return FLOYao.cuproduct_state(T, DitStr{2}(bit_configs))
+function cuproduct_state(::Type{T}, bit_configs::AbstractVector) where {T}
+    return cuproduct_state(T, DitStr{2}(bit_configs))
 end
 
 # integer input
-function FLOYao.cuproduct_state(::Type{T}, nbits::Int, val::Integer) where {T}
-    return FLOYao.cuproduct_state(T, DitStr{2,nbits}(val))
+function cuproduct_state(::Type{T}, nbits::Int, val::Integer) where {T}
+    return cuproduct_state(T, DitStr{2,nbits}(val))
 end
 
-function FLOYao.majorana2arrayreg(reg::CuMajoranaReg)
+function majorana2arrayreg(reg::CuMajoranaReg)
     nq = nqubits(reg)
 
     # praying here, that the rand_state has non-zero overlap with the 
@@ -105,7 +135,7 @@ end
     A[i,j], A[i,j-1] = A[i,j-1], -A[i,j]
 end
 
-function FLOYao.covariance_matrix(reg::CuMajoranaReg)
+function covariance_matrix(reg::CuMajoranaReg)
     nq = nqubits(reg)
     state = reg.state |> copy
     backend = KernelAbstractions.get_backend(state)
@@ -122,7 +152,7 @@ end
     M[p,q] += ifelse(q>p, offset, zero(eltype(M)))
 end
 
-function FLOYao.update_covariance_matrix!(M::CuMatrix, i, pi, ni)
+function update_covariance_matrix!(M::CuMatrix, i, pi, ni)
     backend = KernelAbstractions.get_backend(M)
     kernel! = update_covariance_matrix_kernel!(backend)
     return if size(M, 1) <= 2i # nothing to do for last qubit
@@ -133,7 +163,7 @@ function FLOYao.update_covariance_matrix!(M::CuMatrix, i, pi, ni)
 end
 
 
-@inline function FLOYao.sample(covmat::CuMatrix, locs, ids,
+@inline function sample(covmat::CuMatrix, locs, ids,
                         rng=Random.GLOBAL_RNG)
     out = BigInt(0)
     nq = length(locs)
@@ -148,7 +178,7 @@ end
 
 # a slightly faster version, when all qubits get sampled in their normal
 # order
-@inline function FLOYao.sample(covmat::CuMatrix, rng=Random.GLOBAL_RNG)
+@inline function sample(covmat::CuMatrix, rng=Random.GLOBAL_RNG)
     out = BigInt(0)
     nq = size(covmat,1) ÷ 2
     for i in 1:nq
@@ -164,7 +194,7 @@ end
 # --------------------
 # For actual performance, it would be better if we could construct block on the GPU!
 # Also, the actual logic in majorana_expect can probably be made faster on a GPU
-function FLOYao.majorana_expect(block::AbstractMatrix, reg::CuMajoranaReg)
+function majorana_expect(block::AbstractMatrix, reg::CuMajoranaReg)
     block = block |> cu
 
     expval = sum(1:nqubits(reg), init=zero(eltype(reg.state))) do i
@@ -178,7 +208,7 @@ function FLOYao.majorana_expect(block::AbstractMatrix, reg::CuMajoranaReg)
     return (- expval - offset_expval) / 4
 end
 
-function FLOYao.bitstring_probability(reg::CuMajoranaReg{T}, bit_string::DitStr{2,N,ST}) where {T,N,ST}
+function bitstring_probability(reg::CuMajoranaReg{T}, bit_string::DitStr{2,N,ST}) where {T,N,ST}
     @assert nqubits(reg) == N
     p = one(T)
     M = covariance_matrix(reg)

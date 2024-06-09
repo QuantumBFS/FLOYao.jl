@@ -81,6 +81,67 @@ the computational basis:
 FLOYao.bitstring_probability
 ```
 
+## GPU support
+To enable the `FLOYaoCUDAExt` package extension you need to add [`CUDA.jl`](https://github.com/JuliaGPU/CUDA.jl), [`KernelAbstractions.jl`](https://github.com/JuliaGPU/KernelAbstractions.jl)
+and [`ExponentialUtilities.jl`](https://github.com/SciML/ExponentialUtilities.jl)
+to your project via
+```julia-repl
+julia> ]
+(pgk) > add CUDA, KernelAbstractions, ExponentialUtilities
+```
+The reason that adding `CUDA.jl` to the project doesn't suffice is that 
+[package extensions can't have dependencies](https://github.com/JuliaLang/Pkg.jl/issues/3641).
+
+Once that is done, GPU support implemented very similar to the way it works in
+`Yao.jl`. Array creation on the GPU is facilitated with the following functions:
+```@docs
+FLOYao.cuzero_state
+FLOYao.cuone_state
+FLOYao.cuproduct_state
+```
+which like [`FLOYao.one_state`](@ref) are not exported to not clash with 
+the corresponding functions in `Yao.jl`. 
+
+Upload and download of `MajoranaReg`s to and from the GPU is facilitated by
+the `cu` and `cpu` functions
+```@docs
+FLOYao.cu
+FLOYao.cpu
+```
+like in `Yao.jl`.
+
+A quick example from the tests is shown below:
+```julia
+nq = 4
+circuit = chain(nq)
+
+θ = π/8
+xxg = kron(nq, 1 => X, 2 => Y)
+rg = rot(xxg, θ)
+push!(circuit, rg)
+push!(circuit, put(nq, 3=>Rz(0.5)))
+push!(circuit, rg)
+
+θ = π/5
+xxg = kron(nq, 2 => X, 3 => Z, 4 => Y)
+rg = rot(xxg, θ)
+rz = put(nq, 3 => Rz(θ))
+push!(circuit, rg)
+push!(circuit, rz)
+
+ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.05f0put(nq, 2=>Z)
+gpureg = FLOYao.cuzero_state(nq)
+cpureg = FLOYao.zero_state(nq)
+gpureg |> put(nq, 2=>X)
+cpureg |> put(nq, 2=>X)
+
+
+gpueval = expect(ham, gpureg |> circuit)
+cpueval = expect(ham, cpureg |> circuit)
+@assert meval ≈ aeval
+@assert cpureg ≈ gpureg |> cpu
+```
+
 ## Non-exported functions
 The following functions are not exported and not really needed for the 
 functionality of `FLOYao`, but can be useful for debugging.
