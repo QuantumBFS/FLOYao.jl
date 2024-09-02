@@ -71,7 +71,7 @@ for BT in [:AbstractAdd, :(KronBlock{2}), :(PutBlock{2,1,ZGate})]
     end
 end
 
-Yao.expect(op::Scale, reg::MajoranaReg) = op.alpha * Yao.expect(op.content, reg)
+Yao.expect(op::Scale, reg::MajoranaReg) = Yao.factor(op) * Yao.expect(Yao.content(op), reg)
 #
 # ----------------------
 # Calculating fidelities

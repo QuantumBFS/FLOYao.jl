@@ -235,21 +235,21 @@ end
     θ = π/8
     xxg = kron(nq, 1 => X, 2 => Y)
     rg = rot(xxg, θ)
-    push!(circuit, rg)  
+    push!(circuit, rg)
     push!(circuit, put(nq, 3=>Rz(0.5)))
-    push!(circuit, rg)  
+    push!(circuit, rg)
 
     θ = π/5
     xxg = kron(nq, 2 => X, 3 => Z, 4 => Y)
     rg = rot(xxg, θ)
     rz = put(nq, 3 => Rz(θ))
-    push!(circuit, rg)  
+    push!(circuit, rg)
     push!(circuit, put(nq, 3=>Rz(0.5)))
     push!(circuit, put(nq, (2,3) => FSWAP))
     push!(circuit, put(nq, 1=>Z))
     push!(circuit, put(nq, 4=>X))
-    push!(circuit, rg)  
-    push!(circuit, rz)  
+    push!(circuit, rg)
+    push!(circuit, rz)
 
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
     mreg = FLOYao.zero_state(nq)
@@ -263,6 +263,11 @@ end
 
     meval = expect(ham[end], mreg)
     aeval = expect(ham[end], areg)
+    @test meval ≈ aeval
+
+    op = -kron(nq, 2=>X, 3=>X)
+    meval = expect(op, mreg)
+    aeval = expect(op, areg)
     @test meval ≈ aeval
 
     # test kronblocks inside put blocks
