@@ -42,7 +42,7 @@ for (G, SC) in zip([:T, :Tdag], [(1/√2, 1/√2), (-1/√2, 1/√2)])
     @eval function Yao.instruct!(reg::MajoranaReg, ::Val{$(QuoteNode(G))}, locs::Tuple)
         loc = locs[1]
         s, c = $SC
-        for k = 1:size(reg.state, 2)
+        @inbounds for k = 1:size(reg.state, 2)
             ψ1, ψ2 = reg.state[2loc-1,k], reg.state[2loc,k]
             reg.state[2loc-1,k] = c * ψ1 + s * ψ2
             reg.state[2loc,k] = -s * ψ1 + c * ψ2
