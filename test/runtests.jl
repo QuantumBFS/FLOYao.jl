@@ -17,7 +17,7 @@
 
 using Test
 using FLOYao
-using YaoAPI # needed for the doctest tests
+using Yao.YaoAPI # needed for the doctest tests
 using Yao
 using StatsBase
 using Documenter
@@ -47,18 +47,29 @@ end
     x = randn(ComplexF64, 10, 10)
     y = randn(ComplexF64, 10, 10)
     A = FLOYao.sprand(ComplexF64, 10, 10, 0.3)
+    B = FLOYao.SparseMatrixCOO(Matrix(A))
     r = FLOYao.fast_overlap(y, A, x)
+    r2 = FLOYao.fast_overlap(y, B, x)
     @test isapprox(r, tr(y' * A * x), atol=1e-7)
     @test isapprox(r, y ⋅ (A * x), atol=1e-7)
+    @test isapprox(r2, tr(y' * B * x), atol=1e-7)
+    @test isapprox(r2, y ⋅ (B * x), atol=1e-7)
 end
 
 @testset "fast_add!" begin
     A = randn(10, 10)
     B = FLOYao.sprand(10, 10, 0.2)
+    D = FLOYao.SparseMatrixCOO(Matrix(FLOYao.sprand(10, 10, 0.2)))
     C = copy(A)
     @test FLOYao.fast_add!(C, B) ≈ A + B
     C = copy(A)
     @test FLOYao.fast_add!(C, Matrix(B)) ≈ A + B
+
+    C = copy(A)
+    @test FLOYao.fast_add!(C, D) ≈ A + D
+    C = copy(A)
+    @test FLOYao.fast_add!(C, Matrix(D)) ≈ A + D
+
 end
 
 @testset "MajoranaRegister" begin
