@@ -258,7 +258,7 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     @inbounds for k in yaoham
         if k isa Scale
-            fast_add!(ham, rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
+            fast_add!(ham, _rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
             #ham += k.alpha * yaoham2majoranasquares(T, k.content)
         elseif k isa KronBlock
             i1, i2 = kron2majoranaindices(k)
@@ -281,6 +281,8 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     end
     return ham
 end
+_rmul!(A::SparseMatrixCOO, α::Real) = SparseMatrixCOO(A.is, A.js, rmul!(A.vs, α), A.m, A.n)
+_rmul!(A::AbstractMatrix, α::Real) = rmul!(A, α)
 
 function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}
     i1, i2 = kron2majoranaindices(yaoham)
