@@ -99,9 +99,11 @@ end
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::RGate)
     i1, i2 = kron2majoranaindices(b.block)
     s, c = sincos(b.theta)
-    ψ1, ψ2 = view(reg.state, i1,:), view(reg.state,i2,:)
-    reg.state[i1,:] .= c .* ψ1 .+ s .* ψ2
-    reg.state[i2,:] .= c .* ψ2 .- s .* ψ1
+    for k in 1:size(reg.state, 2)
+        a, b = reg.state[i1,k], reg.state[i2,k]
+        reg.state[i1,k] = c * a + s * b
+        reg.state[i2,k] = c * b - s * a
+    end
     return reg
 end
 
@@ -110,9 +112,11 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::PutBlock{2,N,<:RGate}) whe
     # goddamnit, 1-based indexing
     i1, i2 = 2 * (minimum(b.locs) - 1) .+ kron2majoranaindices(b.content.block)
     s, c = sincos(b.content.theta)
-    ψ1, ψ2 = view(reg.state,i1,:), reg.state[i2,:]
-    reg.state[i1,:] .= c .* ψ1 .+ s .* ψ2
-    reg.state[i2,:] .= c .* ψ2 .- s .* ψ1
+    for k in 1:size(reg.state, 2)
+        a, b = reg.state[i1, k], reg.state[i2, k]
+        reg.state[i1, k] = c * a + s * b
+        reg.state[i2, k] = c * b - s * a
+    end
     return reg
 end
 

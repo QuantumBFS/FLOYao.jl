@@ -26,8 +26,7 @@ function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
     inδ.state .= ham * inδ.state
     @inbounds for i in 1:nqudits(in) 
         for k in 1:size(inδ.state, 1)
-            inδ.state[k,2i-1] = -inδ.state[k,2i-1]
-            inδ.state[k,2i] = inδ.state[k,2i]
+            inδ.state[k,2i-1], inδ.state[k,2i] = -inδ.state[k,2i], inδ.state[k,2i-1]
         end
     end
     inδ.state[:,1:end] .*= -1
