@@ -195,7 +195,7 @@ end
 
 Get the indices of majorana operators from a kronecker product of pauli operators
 """
-function kron2majoranaindices(k::KronBlock{D, M, <:NTuple{M, PauliGate}}) where {D, M}
+function kron2majoranaindices(k::KronBlock{2, M, <:NTuple{M, PauliGate}}) where {M}
     locs = first.(k.locs)
     perm = YaoBlocks.TupleTools.sortperm(locs)
     areconsecutive(ntuple(i->locs[perm[i]], M)) || throw(NonFLOException("$k is not acting on consecutive qubits"))
@@ -281,8 +281,6 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     end
     return ham
 end
-_rmul!(A::SparseMatrixCOO, α::Real) = SparseMatrixCOO(A.is, A.js, rmul!(A.vs, α), A.m, A.n)
-_rmul!(A::AbstractMatrix, α::Real) = rmul!(A, α)
 
 function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}
     i1, i2 = kron2majoranaindices(yaoham)
@@ -351,10 +349,13 @@ random_orthogonal_matrix(n) = random_orthogonal_matrix(Float64, n)
 # -------------------------------------------
 # Utilities for fast sparse matrix operations
 # -------------------------------------------
+_rmul!(A::SparseMatrixCOO, α::Real) = SparseMatrixCOO(A.is, A.js, rmul!(A.vs, α), A.m, A.n)
+_rmul!(A::AbstractMatrix, α::Real) = rmul!(A, α)
+
 """
     fast_add!(A::AbstractMatrix, B::AbstractMatrix)
 
-Fast implementation of `A .+= B` for sparse `B`.
+Fast implementation of `A .+= B` optimised for sparse `B`.
 """
 function fast_add!(A::AbstractMatrix, B::SparseMatrixCOO)
     @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
@@ -371,7 +372,7 @@ end
 """
     fast_overlap(y::AbstractVecOrMat, A::AbstractMatrix, x::AbstractVecOrMat)
 
-Fast implementation of `tr(y' * A * x)` for sparse `A`.
+Fast implementation of `tr(y' * A * x)` optimised for sparse `A`.
 """
 function fast_overlap(y::AbstractVecOrMat{T1}, A::SparseMatrixCOO{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
     @assert size(x, 1) == size(A, 2) && size(y, 1) == size(A, 1) && size(x, 2) == size(y, 2) "Dimension mismatch"
