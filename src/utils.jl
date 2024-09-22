@@ -195,10 +195,10 @@ end
 
 Get the indices of majorana operators from a kronecker product of pauli operators
 """
-function kron2majoranaindices(k::KronBlock)
-    locs = collect(Iterators.flatten(k.locs))
-    perm = sortperm(locs)
-    areconsecutive(locs[perm]) || throw(NonFLOException("$k is not acting on consecutive qubits"))
+function kron2majoranaindices(k::KronBlock{2, M, <:NTuple{M, PauliGate}}) where {M}
+    locs = first.(k.locs)
+    perm = YaoBlocks.TupleTools.sortperm(locs)
+    areconsecutive(ntuple(i->locs[perm[i]], M)) || throw(NonFLOException("$k is not acting on consecutive qubits"))
     
     # these are the indices in the majorana hamiltonian corresponding to this
     # kronecker product. swap accumulates the overall sign
@@ -258,7 +258,7 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
     ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     @inbounds for k in yaoham
         if k isa Scale
-            fast_add!(ham, rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
+            fast_add!(ham, _rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
             #ham += k.alpha * yaoham2majoranasquares(T, k.content)
         elseif k isa KronBlock
             i1, i2 = kron2majoranaindices(k)
@@ -283,28 +283,19 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}
-    ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     i1, i2 = kron2majoranaindices(yaoham)
-    ham[i1,i2] = 2
-    ham[i2,i1] = -2
-    return ham
+    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T<:Real}
-    ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     i1, i2 = 2yaoham.locs[1]-1, 2yaoham.locs[1]
-    ham[i1,i2] = 2
-    ham[i2,i1] = -2
-    return ham
+    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,N,<:PauliKronBlock}) where {T<:Real, N}
     areconsecutive(yaoham.locs) || throw(NonFLOException("$(yaoham.content) contains terms that are not the product of two Majoranas"))
-    ham = spzeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
     i1, i2 = 2 * (minimum(yaoham.locs) - 1) .+ kron2majoranaindices(yaoham.content)
-    ham[i1,i2] = 2
-    ham[i2,i1] = -2
-    return ham
+    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::Scale) where {T<:Real}
@@ -358,17 +349,18 @@ random_orthogonal_matrix(n) = random_orthogonal_matrix(Float64, n)
 # -------------------------------------------
 # Utilities for fast sparse matrix operations
 # -------------------------------------------
-"""
-    fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
+_rmul!(A::SparseMatrixCOO, α::Real) = SparseMatrixCOO(A.is, A.js, rmul!(A.vs, α), A.m, A.n)
+_rmul!(A::AbstractMatrix, α::Real) = rmul!(A, α)
 
-Fast implementation of `A .+= B` for sparse `B`.
 """
-function fast_add!(A::AbstractMatrix, B::SparseMatrixCSC)
+    fast_add!(A::AbstractMatrix, B::AbstractMatrix)
+
+Fast implementation of `A .+= B` optimised for sparse `B`.
+"""
+function fast_add!(A::AbstractMatrix, B::SparseMatrixCOO)
     @assert size(A, 1) == size(B, 1) && size(A, 2) == size(B, 2) "Dimension mismatch"
-    for j = 1:size(B, 2)
-        for k in SparseArrays.nzrange(B, j)
-            @inbounds A[B.rowval[k],j] += B.nzval[k]
-        end
+    for (i, j, v) in zip(B.is, B.js, B.vs)
+        @inbounds A[i, j] += v
     end
     return A
 end
@@ -378,19 +370,16 @@ function fast_add!(A::AbstractMatrix, B::AbstractMatrix)
 end
 
 """
-    fast_overlap(y::AbstractVecOrMat, A::SparseMatrixCSC, x::AbstractVecOrMat)
+    fast_overlap(y::AbstractVecOrMat, A::AbstractMatrix, x::AbstractVecOrMat)
 
-Fast implementation of `tr(y' * A * x)` for sparse `A`.
+Fast implementation of `tr(y' * A * x)` optimised for sparse `A`.
 """
-function fast_overlap(y::AbstractVecOrMat{T1}, A::SparseMatrixCSC{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
+function fast_overlap(y::AbstractVecOrMat{T1}, A::SparseMatrixCOO{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
     @assert size(x, 1) == size(A, 2) && size(y, 1) == size(A, 1) && size(x, 2) == size(y, 2) "Dimension mismatch"
     g = zero(promote_type(T1, T2, T3))
-    @inbounds for j = 1:size(A, 2)
-        for k in SparseArrays.nzrange(A, j)
-            i = A.rowval[k]
-            for m = 1:size(y, 2)
-                g += conj(y[i, m]) * A.nzval[k] * x[j, m]
-            end
+    @inbounds for (i, j, v) in zip(A.is, A.js, A.vs)
+        for m = 1:size(y, 2)
+            g += conj(y[i, m]) * v * x[j, m]
         end
     end
     return g

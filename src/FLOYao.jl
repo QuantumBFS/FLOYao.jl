@@ -39,8 +39,8 @@ module FLOYao
 
 using LinearAlgebra
 using Random
-using SparseArrays
 using Yao
+using Yao.YaoBlocks.LuxurySparse: SparseMatrixCOO
 
 export MajoranaReg
 

@@ -96,23 +96,27 @@ end
 
 # Defined in FLOYao.jl
 # const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
-function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::RGate)
-    i1, i2 = kron2majoranaindices(b.block)
-    s, c = sincos(b.theta)
-    ψ1, ψ2 = reg.state[i1,:], reg.state[i2,:]
-    reg.state[i1,:] .= c .* ψ1 .+ s .* ψ2
-    reg.state[i2,:] .= c .* ψ2 .- s .* ψ1
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, ψ2::RGate)
+    i1, i2 = kron2majoranaindices(ψ2.block)
+    s, c = sincos(ψ2.theta)
+    for k in 1:size(reg.state, 2)
+        ψ1, ψ2 = reg.state[i1,k], reg.state[i2,k]
+        reg.state[i1,k] = c * ψ1 + s * ψ2
+        reg.state[i2,k] = c * ψ2 - s * ψ1
+    end
     return reg
 end
 
-function YaoBlocks.unsafe_apply!(reg::MajoranaReg, b::PutBlock{2,N,<:RGate}) where {N}
-    areconsecutive(b.locs) || throw(NonFLOException("$(b.blocks) on $(b.locs) is not a FLO gate"))
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, ψ2::PutBlock{2,N,<:RGate}) where {N}
+    areconsecutive(ψ2.locs) || throw(NonFLOException("$(ψ2.blocks) on $(ψ2.locs) is not a FLO gate"))
     # goddamnit, 1-based indexing
-    i1, i2 = 2 * (minimum(b.locs) - 1) .+ kron2majoranaindices(b.content.block)
-    s, c = sincos(b.content.theta)
-    ψ1, ψ2 = reg.state[i1,:], reg.state[i2,:]
-    reg.state[i1,:] .= c .* ψ1 .+ s .* ψ2
-    reg.state[i2,:] .= c .* ψ2 .- s .* ψ1
+    i1, i2 = 2 * (minimum(ψ2.locs) - 1) .+ kron2majoranaindices(ψ2.content.block)
+    s, c = sincos(ψ2.content.theta)
+    for k in 1:size(reg.state, 2)
+        ψ1, ψ2 = reg.state[i1, k], reg.state[i2, k]
+        reg.state[i1, k] = c * ψ1 + s * ψ2
+        reg.state[i2, k] = c * ψ2 - s * ψ1
+    end
     return reg
 end
 

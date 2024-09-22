@@ -42,9 +42,11 @@ for (G, SC) in zip([:T, :Tdag], [(1/√2, 1/√2), (-1/√2, 1/√2)])
     @eval function Yao.instruct!(reg::MajoranaReg, ::Val{$(QuoteNode(G))}, locs::Tuple)
         loc = locs[1]
         s, c = $SC
-        ψ1, ψ2 = reg.state[2loc-1,:], reg.state[2loc,:]
-        reg.state[2loc-1,:] .= c .* ψ1 .+ s .* ψ2
-        reg.state[2loc,:] .= c .* ψ2 .- s .* ψ1
+        @inbounds for k = 1:size(reg.state, 2)
+            ψ1, ψ2 = reg.state[2loc-1,k], reg.state[2loc,k]
+            reg.state[2loc-1,k] = c * ψ1 + s * ψ2
+            reg.state[2loc,k] = -s * ψ1 + c * ψ2
+        end
         return reg
     end
 end
@@ -53,9 +55,11 @@ for G in [:Rz, :Shift]
     @eval function Yao.instruct!(reg::MajoranaReg, ::Val{$(QuoteNode(G))}, locs::Tuple, theta)
         loc = locs[1]
         s, c = sincos(theta)
-        ψ1, ψ2 = reg.state[2loc-1,:], reg.state[2loc,:]
-        reg.state[2loc-1,:] .= c .* ψ1 .+ s .* ψ2
-        reg.state[2loc,:] .= c .* ψ2 .- s .* ψ1
+        for k = 1:size(reg.state, 2)
+            ψ1, ψ2 = reg.state[2loc-1,k], reg.state[2loc,k]
+            reg.state[2loc-1,k] = c * ψ1 + s * ψ2
+            reg.state[2loc,k] = -s * ψ1 + c * ψ2
+        end
         return reg
     end
 end
