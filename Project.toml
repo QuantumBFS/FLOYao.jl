@@ -10,7 +10,7 @@ SkewLinearAlgebra = "5c889d49-8c60-4500-9d10-5d3a22e2f4b9"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
 [compat]
-SkewLinearAlgebra = "1.0.0"
+SkewLinearAlgebra = "1"
 Yao = "0.8.6, 0.9"
 julia = "1"
 
