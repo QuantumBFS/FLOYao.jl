@@ -330,6 +330,23 @@ end
     @test params_mregδ ≈ params_aregδ
 
     @test fidelity(majorana2arrayreg(in_mreg), in_areg) ≈ 1.
+
+    mzero = FLOYao.zero_state(nq)
+    azero = zero_state(nq)
+    mreg = apply(mzero, put(nq, 1=>X))
+    areg = apply(azero, put(nq, 1=>X))
+    mgrad = @test_warn "Calling manual" fidelity'(mzero, mreg => circuit)[2][2]
+    agrad = fidelity'(azero, areg => circuit)[2][2]
+    @test mgrad ≈ agrad
+
+    mreg2 = FLOYao.rand_state(nq)
+    if det(mreg2.state) < 0
+        apply!(mreg2, put(nq, 1=>X))
+    end
+    areg2 = majorana2arrayreg(mreg2)
+    mgrad = @test_warn "Calling manual" fidelity'(mreg => circuit, mreg2)[1][2]
+    agrad = fidelity'(areg => circuit, areg2)[1][2]
+    @test mgrad ≈ agrad
 end
 
 @testset "fidelity" begin

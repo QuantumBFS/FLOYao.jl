@@ -72,7 +72,7 @@ for BT in [:AbstractAdd, :(KronBlock{2}), :(PutBlock{2,1,ZGate})]
 end
 
 Yao.expect(op::Scale, reg::MajoranaReg) = Yao.factor(op) * Yao.expect(Yao.content(op), reg)
-#
+
 # ----------------------
 # Calculating fidelities
 # ----------------------
@@ -97,17 +97,20 @@ end
 
 """
     fidelity(reg1::MajoranaReg, reg2::MajoranaReg)
+    fidelity'(pair_or_majoranareg, pair_or_majoranareg) -> (g1, g2)
 
 The fidelity ``|⟨ψ|φ⟩|`` between the FLO states ``|ψ⟩`` and ``|φ⟩`` defined
 by `reg1` and `reg2`.
 
+The gradient with respect to registers and circuit parameters. For a pair input
+`reg => circuit` the returned gradient is a pair of `greg => gparams` with
+`greg` the gradient with respect to the input state and `gparams` the gradient
+with respect to circuit parameters. For a `reg` input the return value is the
+gradient with respect to the register.
+
 !!! note
     This definition differs from the standard definition ``|⟨φ|ψ⟩|²`` by a square 
     root, but is consistent with the one used in `Yao.jl`
-
-!!! note
-    Computing gradients of the fidelity via `fidelity'(pair_or_reg1, pair_or_reg2)`
-    is not yet supported for `MajoranaReg`s.
 """
 function Yao.fidelity(reg1::MajoranaReg{T1}, reg2::MajoranaReg{T2}) where {T1,T2}
     T = promote_type(T1, T2)

@@ -388,3 +388,113 @@ end
 function fast_overlap(y::AbstractVecOrMat{T1}, A::AbstractMatrix{T2}, x::AbstractVecOrMat{T3}) where {T1,T2,T3}
     return y ⋅ (A * x)
 end
+
+# ------------------------------------
+# Matrices for gradients of fidelities
+# ------------------------------------
+@inline function W_matrix(R::AbstractMatrix{T}) where {T}
+    n = size(R, 1) ÷ 2
+    W = zeros(Complex{T}, 2n, 2n)
+    for i in 1:2:2n
+        W[:,i] .= R[:,i] .- 1im * R[:,i+1]
+        W[:,i+1] .= R[:,i] .+ 1im * R[:,i+1]
+    end
+    return W
+end
+
+# TODO: This can be sped up by directly constructing A in a triply nested for loop
+# But I am not good enough at actually getting maximum performance here...
+@inline function A_matrix(R)
+    n = size(R, 1) ÷ 2
+    W = W_matrix(R)
+
+    gW = zero(W)
+    for i in 1:2:2n
+        gW[i,:] .= (W[i,:] .- 1im .* W[i+1,:]) ./ 4
+        gW[i+1,:] .= (1im .* W[i,:] .+ W[i+1,:]) ./ 4
+    end
+
+    A = transpose(W) * gW
+    # take the correct anti-symmetric part
+    for i in 1:2n
+        for j in i+1:2n
+            A[j,i] = -A[i,j]
+        end
+    end
+    A[diagind(A)] .= 0
+
+    return A
+end
+
+# A is actually A_inv, but I like the short lines
+@inline function B_matrix(A)
+    n = size(A, 1) ÷ 2
+    B = zero(A)
+    for i in 1:2:2n
+        B[:,i] .= A[:,i] .+ A[:,i+1]
+        B[:,i+1] .= -1im .* A[:,i] .+ 1im .* A[:,i+1]
+    end
+    return B
+end
+
+@inline function C_matrix(W)
+    n = size(W, 1) ÷ 2
+    C = zero(W)
+    for i in 1:2:2n
+        C[:,i] .= -W[i+1,:]
+        C[:,i+1] .= W[i,:]
+    end
+    return C
+end
+
+# TODO: This function seems to be every so subtly wrong in a way that
+# transpose(C_tilde) * B_tilde has a non-zero imaginary part
+# A is actually A_inv, but I like the short lines
+@inline function B_tilde_matrix(A)
+    n = size(A, 1) ÷ 2
+    B = zero(A)
+    for g in 1:2:2n, j in 1:2:2n
+        if j < g
+            B[j,g] = -A[j,g] + 1im * A[j,g+1]
+            B[j+1,g] = 1im * A[j+1,g] - A[j+1,g+1]
+            B[j,g+1] = 1im * A[j,g] + A[j,g+1]
+            B[j+1,g+1] = -A[j+1,g] - 1im * A[j+1,g+1]
+        elseif j > g
+            B[j,g] = A[j,g] - 1im * A[j,g+1]
+            B[j+1,g] = -1im * A[j+1,g] + A[j+1,g+1]
+            B[j,g+1] = -1im * A[j,g] - A[j,g+1]
+            B[j+1,g+1] = A[j+1,g] + 1im * A[j+1,g+1]
+        else # j == g #
+            B[j,g] = -A[j,g+1]
+            B[j+1,g] = A[j+1,g]
+            B[j,g+1] = -1im * A[j,g+1]
+            B[j+1,g+1] = -1im * A[j+1,g]
+        end
+    end
+    return B
+end
+
+@inline function C_tilde_matrix(W)
+    return transpose(W)
+end
+
+function fidelity_gradient(R)
+    n = size(R, 1) ÷ 2
+    W = W_matrix(R)
+
+    # Todo: Reuse W here!
+    A = A_matrix(R)
+    val = sqrt(pfaffian(A))  # Yao's definition of the fidelity differs by a sqrt
+    A_inv = inv(A)
+
+    B = B_matrix(A_inv)
+    C = C_matrix(W)
+    B_tilde = B_tilde_matrix(A_inv)
+    C_tilde = C_tilde_matrix(W)
+
+
+    # the sqrt(val) is here because of Yaos weird definition of the fidelity
+    # The real part of this is correct. But where is the imaginary part from?
+    #                   purely real              not purely real, a bug?
+    return real.(val * (1im * transpose(C) * B + transpose(C_tilde) * B_tilde)) / 4
+end
