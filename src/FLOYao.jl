@@ -51,6 +51,7 @@ const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
 
 include("utils.jl")
 include("majorana_reg.jl")
+include("majorana_ham.jl")
 include("instruct.jl")
 include("apply_composite.jl")
 include("expect.jl")

@@ -47,7 +47,7 @@ end
 # Reverse propagating states
 # --------------------------
 function Yao.AD.apply_back(st::Tuple{<:MajoranaReg,<:MajoranaReg}, block::AbstractBlock)
-    paramsδ = [] 
+    paramsδ = []
     in, inδ = Yao.AD.apply_back!(st, block, paramsδ)
     return (in, inδ), paramsδ
 end
