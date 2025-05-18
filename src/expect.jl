@@ -18,13 +18,7 @@
 # ------------------------------
 # Calculating expectation values
 # ------------------------------
-
-"""
-    majorana_expect(ham::MajoranaSum, reg::MajoranaReg)
-
-Calculate `⟨reg|ham|reg⟩` where `ham` via sum of pfaffians
-"""
-function majorana_expect(ham::MajoranaSum, reg::MajoranaReg)
+function Yao.expect(ham::MajoranaSum, reg::MajoranaReg)
     C = covariance_matrix(reg)
     even_terms = Iterators.filter(iseven ∘ length, ham)
     sum(even_terms) do term
@@ -35,14 +29,14 @@ function majorana_expect(ham::MajoranaSum, reg::MajoranaReg)
 end
 
 """
-    expect(op::AbstractBlock, reg::MajoranaReg)
-    expect(op::AbstractBlock, (reg => circuit)::Pair{<:MajoranaReg,<:AbstractBlock})
+    expect(op::Union{AbstractBlock,MajoranaSum}, reg::MajoranaReg)
+    expect(op::Union{AbstractBlock,MajoranaSum}, (reg => circuit)::Pair{<:MajoranaReg,<:AbstractBlock})
 
 Get the expectation value of an operator, the second parameter can be a
 register `reg` or a pair of input register and circuit `reg => circuit`.
 
-    expect'(op::AbstractBlock, reg => circuit::) -> Pair{<:MajoranaReg,<:AbstractVector}
-    expect'(op::AbstractBlock, reg::MajoranaReg) -> MajoranaReg
+    expect'(op::Union{AbstractBlock,MajoranaSum}, reg => circuit::) -> Pair{<:MajoranaReg,<:AbstractVector}
+    expect'(op::Union{AbstractBlock,MajoranaSum}, reg::MajoranaReg) -> MajoranaReg
 
 Obtain the gradient with respect to registers and circuit parameters. For pair
 input, the second return value is a pair of `gψ => gparams`, with `gψ` the gradient
@@ -52,7 +46,7 @@ input, the return value is a register.
 function Yao.expect(op::AbstractBlock, reg::MajoranaReg)
     YaoBlocks._check_size(reg, op)
     majoranasum = yaoblock2majoranasum(eltype(reg), op)
-    return majorana_expect(majoranasum, reg)
+    return expect(majoranasum, reg)
 end
 
 # ----------------------

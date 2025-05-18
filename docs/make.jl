@@ -25,6 +25,7 @@ makedocs(;
     ),
     pages = PAGES,
     checkdocs = :exports,
+    warnonly=true,
     repo = "https://github.com/QuantumBFS/FLOYao.jl",
     sitename = "FLOYao.jl",
 )

@@ -1,20 +1,5 @@
 # Known restrictions
 
-##  Expectation values of higher order observables
-So far, `FLOYao` only supports expectation values of observables that are sums of squares of 
-Majorana operators. But in general, one can use [Wick's theorem](https://en.wikipedia.org/wiki/Wick%27s_theorem)
-to calculate the expectation values of expressions of the form 
-```math
-    ⟨O⟩ = ⟨Ω|U^† O U|Ω⟩
-```
-where $|Ω⟩ = |0 ⋯ 0⟩$ is the all zero state, $O$ a string of Majorana operators
-and $U$ a FLO unitary. Thus, using linearity of the expectation value, it is
-possible to efficiently calculate the expectation value of any observable that
-can be expanded in a sum of polynomially (in the number of qubits) many
-products of Majorana operators. (See also [Classical simulation of noninteracting-fermion quantum circuits](https://arxiv.org/abs/quant-ph/0108010) again for details).
-If you need expectation values of higher order (in the number of Majorana
-operators involved) observables, feel free to open a pull request!
-
 ## "Hidden" FLO circuits
 `Yao.jl` allows to express the same circuit in different forms. E.g. 
 ```julia

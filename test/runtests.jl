@@ -24,6 +24,10 @@ using Documenter
 using LinearAlgebra
 import FLOYao: majorana2arrayreg, NonFLOException
 
+# Run the doctests
+DocMeta.setdocmeta!(FLOYao, :DocTestSetup, :(using FLOYao, Yao); recursive=true)
+doctest(FLOYao)
+
 @const_gate TestGate::ComplexF64 = [1 0 ; 0 exp(-1im*π/5)]
 @const_gate FSWAP::ComplexF64 = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 -1]
 @const_gate ManualX::ComplexF64 = [0 1; 1 0]
@@ -344,46 +348,58 @@ end
     ising_evolution = time_evolve(hamiltonian, 1.)
     push!(circuit, ising_evolution)
 
-    ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
+    ham = (put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
+          + 0.5kron(nq, 1=>Z, 2=>Z) - kron(nq, 2 => X, 4 => Y)
+          )
+    majoranasum = MajoranaSum(ham)
     mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     mreg |> put(nq, 1=>X)
     areg |> put(nq, 1=>X)
-    mgrad = @test_warn "Calling manual" expect'(ham, mreg => circuit)[2]
+    mgrad1 = @test_warn "Calling manual" expect'(ham, mreg => circuit)[2]
+    mgrad2 = @test_warn "Calling manual" expect'(majoranasum, mreg => circuit)[2]
     agrad = expect'(ham, areg => circuit)[2]
 
-    @test mgrad ≈ agrad
+    @test mgrad1 ≈ agrad
+    @test mgrad2 ≈ agrad
 
     mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
     mreg |> put(nq, 1=>X) |> circuit
     areg |> put(nq, 1=>X) |> circuit
 
-    mregδ = Yao.AD.expect_g(ham, mreg)
+    mreg1 = copy(mreg)
+    mreg2 = copy(mreg)
+
+    mregδ1 = Yao.AD.expect_g(ham, mreg1)
+    mregδ2 = Yao.AD.expect_g(majoranasum, mreg2)
     aregδ = Yao.AD.expect_g(ham, areg)
 
-    (in_mreg, in_mregδ), params_mregδ = @test_warn "Calling manual" Yao.AD.apply_back((mreg, mregδ), circuit)
+    (in_mreg1, in_mregδ1), params_mregδ1 = @test_warn "Calling manual" Yao.AD.apply_back((mreg1, mregδ1), circuit)
+    (in_mreg2, in_mregδ2), params_mregδ2 = @test_warn "Calling manual" Yao.AD.apply_back((mreg2, mregδ2), circuit)
     (in_areg, in_aregδ), params_aregδ = Yao.AD.apply_back((areg, aregδ), circuit)
-    @test params_mregδ ≈ params_aregδ
+    @test params_mregδ1 ≈ params_aregδ
+    @test params_mregδ2 ≈ params_aregδ
 
-    @test fidelity(majorana2arrayreg(in_mreg), in_areg) ≈ 1.
+    @test fidelity(majorana2arrayreg(in_mreg1), in_areg) ≈ 1.
+    @test fidelity(majorana2arrayreg(in_mreg2), in_areg) ≈ 1.
 
     mzero = FLOYao.zero_state(nq)
     azero = zero_state(nq)
     mreg = apply(mzero, put(nq, 1=>X))
     areg = apply(azero, put(nq, 1=>X))
-    mgrad = @test_warn "Calling manual" fidelity'(mzero, mreg => circuit)[2][2]
+    mgrad1 = @test_warn "Calling manual" fidelity'(mzero, mreg => circuit)[2][2]
     agrad = fidelity'(azero, areg => circuit)[2][2]
-    @test mgrad ≈ agrad
+    @test mgrad1 ≈ agrad
 
     mreg2 = FLOYao.rand_state(nq)
     if det(mreg2.state) < 0
         apply!(mreg2, put(nq, 1=>X))
     end
     areg2 = majorana2arrayreg(mreg2)
-    mgrad = @test_warn "Calling manual" fidelity'(mreg => circuit, mreg2)[1][2]
+    mgrad1 = @test_warn "Calling manual" fidelity'(mreg => circuit, mreg2)[1][2]
     agrad = fidelity'(areg => circuit, areg2)[1][2]
-    @test mgrad ≈ agrad
+    @test mgrad1 ≈ agrad
 end
 
 @testset "fidelity" begin
