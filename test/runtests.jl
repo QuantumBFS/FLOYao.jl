@@ -400,6 +400,25 @@ end
     mgrad1 = @test_warn "Calling manual" fidelity'(mreg => circuit, mreg2)[1][2]
     agrad = fidelity'(areg => circuit, areg2)[1][2]
     @test mgrad1 ≈ agrad
+
+    # testing singular matrices
+    mreg = FLOYao.zero_state(nq)
+    areg = zero_state(nq)
+
+    xxg = kron(nq, 1 => X, 2 => X)
+    circuit = rot(xxg, π/2)
+
+    ham = kron(nq, 1=>Z)
+    agrad = expect'(ham, areg => circuit)[2]
+    mgrad = expect'(ham, mreg => circuit)[2]
+    @test agrad ≈ mgrad
+
+    circuit = rot(xxg, 0.)
+
+    ham = kron(nq, 1=>X, 2=>X)
+    agrad = expect'(ham, areg => circuit)[2]
+    mgrad = expect'(ham, mreg => circuit)[2]
+    @test agrad ≈ mgrad
 end
 
 @testset "fidelity" begin

@@ -84,29 +84,22 @@ function Yao.AD.expect_g(ham::MajoranaSum, in::MajoranaReg{T}) where {T}
     inδ = sum(ham) do term
         l = length(term) ÷ 2
         A = C[term.indices, term.indices]
-        # TODO: gonna need some if pf == 0 here
-        A_inv = inv(A)      # why invertible? -> turns out not always
-        pf = pfaffian!(A)   # gonna need some (-1)^length here
+        A_inv, pf = try
+            A_inv = inv(A)
+            pf = pfaffian!(A)
+            A_inv, pf
+        catch   # regularising hack to deal with singular A. Is eps(T) a good choice here?
+            A += eps(T) * I(l) ⊗ [0 1; -1 0]
+            A_inv = inv(A)
+            pf = pfaffian!(A)
+            A_inv, pf
+        end
         tmp = zeros(T, 2nq, length(term.indices))
         tmp[term.indices, :] .= A_inv
         R = in.state[term.indices, :] * G
         coeff = real(1im^l * term.coeff)
         2 * coeff * pf * tmp * R
     end
-
-    # this is correct generally
-    # inδ = sum(ham) do term
-    #     l = length(term) ÷ 2
-    #     A = C[term.indices, term.indices]
-    #     # gonna need some if pf == 0 here
-    #     A_inv = inv(A)      # why invertible? -> turns out not always
-    #     pf = pfaffian!(A)   # gonna need some (-1)^length here
-    #     tmp = zeros(T, 2nq, length(term.indices))
-    #     tmp[term.indices, :] .= A_inv
-    #     R = in.state[term.indices, :] * G
-    #     coeff = real(1im^l * term.coeff)
-    #     2 * coeff * pf * tmp * R
-    # end
 
     return MajoranaReg(inδ)
 end
