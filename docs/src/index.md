@@ -64,28 +64,31 @@ kron
    └─ Z
 ```
 
-and define an observable that is a sum of squares of [Majorana operators](@ref background)
+and define a (here similarly arbitrary) observable
 
 ```jldoctest quickstart; output=false
-hamiltonian = xxg1 + xxg2 + xxg3 + kron(nq, 2=>Z) + kron(nq, 3=>Z)
+hamiltonian = (kron(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
+               + 0.5kron(nq, 1=>Z, 2=>Z) - kron(nq, 2 => X, 4 => Y))
 
 # output
 nqubits: 4
 +
-├─ kron
-│  ├─ 1=>X
-│  └─ 2=>X
-├─ kron
-│  ├─ 2=>X
-│  ├─ 3=>Z
-│  └─ 4=>X
-├─ kron
-│  ├─ 2=>X
-│  └─ 3=>X
-├─ kron
-│  └─ 2=>Z
-└─ kron
-   └─ 3=>Z
+├─ +
+│  ├─ kron
+│  │  └─ 1=>Z
+│  ├─ [scale: 2] kron
+│  │     ├─ 1=>X
+│  │     ├─ 2=>Z
+│  │     ├─ 3=>Z
+│  │     └─ 4=>X
+│  ├─ [scale: 3.5] put on (2)
+│  │     └─ Z
+│  └─ [scale: 0.5] kron
+│        ├─ 1=>Z
+│        └─ 2=>Z
+└─ [-] kron
+      ├─ 2=>X
+      └─ 4=>Y
 ```
 
 and finally create a register in the computational zero state via
@@ -128,7 +131,7 @@ and the same goes for expectation values of observables
 expect(hamiltonian, reg => circuit)
 
 # output
-1.8535533905932737
+5.04883281702193
 ```
 
 or even gradients of these expectation values with respect to the circuit parameters
@@ -137,7 +140,7 @@ or even gradients of these expectation values with respect to the circuit parame
 state_grad, params_grad = expect'(hamiltonian, reg => circuit)
 
 # output
-MajoranaReg{Float64}(4) => [0.0, -0.3535533905932738, -0.3535533905932738, 0.0]
+MajoranaReg{Float64}(4) => [0.0, -0.9130135182550002, 0.20220773043883133, -5.551115123125783e-17]
 ```
 
 ## Contents

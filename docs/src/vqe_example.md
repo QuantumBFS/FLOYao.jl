@@ -32,15 +32,34 @@ T = map(1:L) do i
 end |> sum
 
 hamiltonian = T + U
-# not really needed, but here to circumvent some doctest  restrictions
+
+# only here due to Documenter.jl restrictions
 summary(hamiltonian)
 
 # output
-"YaoBlocks.Add{2}"
+"Add{2}"
 ```
 
+and convert it to a [`MajoranaSum`](@ref)
 
-and the ansatz circuit
+```jldoctest tfimvqe
+majorana_hamiltonian = MajoranaSum(hamiltonian)
+
+# only here due to Documenter.jl restrictions
+summary(majorana_hamiltonian)
+
+# output
+"MajoranaSum{ComplexF64}"
+```
+
+!!! tip "Faster expectation values with `MajoranaSum`"
+    Strictly speaking, it is not neccessary to convert the `hamiltonian`
+    from `Yao.AbstractBlock` to `MajoranaSum`; `expect(::AbstractBlock, ::MajoranaReg)`
+    is also implemented. But if you need to take expectation values with respect
+    the same Hamiltonian many times---as is the case for variational algorithms---
+    doing this conversion improves the performance of `expect` and `expect'`.
+
+Then we can also define the ansatz circuit
 
 ```jldoctest tfimvqe; output=false
 circuit = chain(L)
@@ -80,7 +99,7 @@ nparams = nparameters(circuit)
 dispatch!(circuit, ones(nparams) ./ 100) # fix initial parameters for reproducibility
 
 for i in 1:iterations
-    _, grad = expect'(hamiltonian, reg => circuit)
+    _, grad = expect'(majorana_hamiltonian, reg => circuit)
     dispatch!(-, circuit, gamma * grad)
     println("Iteration $i, energy = $(round(expect(hamiltonian, reg => circuit), digits=4))")
 end

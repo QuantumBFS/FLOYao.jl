@@ -43,7 +43,7 @@ using SkewLinearAlgebra
 using Yao
 using Yao.YaoBlocks.LuxurySparse: SparseMatrixCOO
 
-export MajoranaReg
+export MajoranaReg, MajoranaSum
 
 const PauliGate = Union{I2Gate,XGate,YGate,ZGate}
 const PauliKronBlock = KronBlock{2,N,<:NTuple{N,PauliGate}} where {N}
@@ -51,6 +51,7 @@ const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
 
 include("utils.jl")
 include("majorana_reg.jl")
+include("majorana_ham.jl")
 include("instruct.jl")
 include("apply_composite.jl")
 include("expect.jl")

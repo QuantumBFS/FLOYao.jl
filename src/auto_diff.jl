@@ -24,7 +24,8 @@ const Rotor{T} = Union{RotationGate{2,T},
                       }
 
 function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
-                                 block::Rotor, collector)
+                                 block::Rotor,
+                                 collector)
     out, outδ = st
     ham = Yao.AD.generator(block)
     majoranaham = yaoham2majoranasquares(ham)
@@ -34,7 +35,8 @@ function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
 end
 
 function Yao.AD.backward_params!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
-                                 block::TimeEvolution, collector)
+                                 block::TimeEvolution,
+                                 collector)
     out, outδ = st
     ham = block.H
     majoranaham = yaoham2majoranasquares(ham)
@@ -47,7 +49,7 @@ end
 # Reverse propagating states
 # --------------------------
 function Yao.AD.apply_back(st::Tuple{<:MajoranaReg,<:MajoranaReg}, block::AbstractBlock)
-    paramsδ = [] 
+    paramsδ = []
     in, inδ = Yao.AD.apply_back!(st, block, paramsδ)
     return (in, inδ), paramsδ
 end
@@ -68,28 +70,58 @@ end
 # -------------------------------
 # Gradients of expectation values
 # -------------------------------
-function Yao.AD.expect_g(op::AbstractAdd, in::MajoranaReg)
-    ham = yaoham2majoranasquares(op)
-    inδ = copy(in)
-    inδ.state .= ham * inδ.state
-    @inbounds for i in 1:nqudits(in)
-        for k in 1:size(inδ.state, 1)
-            inδ.state[k,2i-1], inδ.state[k,2i] = -inδ.state[k,2i], inδ.state[k,2i-1]
-        end
-    end
-    inδ.state[:,1:end] .*= -1
-    return inδ
+# to make expect'(...) work
+function (::Adjoint{Any,typeof(expect)})(
+        ham::MajoranaSum,
+        reg_or_circuit::Union{<:MajoranaReg,Pair{<:MajoranaReg,<:AbstractBlock}})
+    Yao.AD.expect_g(ham, reg_or_circuit)
 end
 
+function Yao.AD.expect_g(ham::MajoranaSum, in::MajoranaReg{T}) where {T}
+    nq = nqubits(in)
+    C = covariance_matrix(in)
+    G = I(nq) ⊗ [0 1; -1 0]
+    inδ = sum(ham) do term
+        l = length(term) ÷ 2
+        A = C[term.indices, term.indices]
+        A_inv, pf = try
+            A_inv = inv(A)
+            pf = pfaffian!(A)
+            A_inv, pf
+        catch   # regularising hack to deal with singular A. Is eps(T) a good choice here?
+            A += eps(T) * I(l) ⊗ [0 1; -1 0]
+            A_inv = inv(A)
+            pf = pfaffian!(A)
+            A_inv, pf
+        end
+        tmp = zeros(T, 2nq, length(term.indices))
+        tmp[term.indices, :] .= A_inv
+        R = in.state[term.indices, :] * G
+        coeff = real(1im^l * term.coeff)
+        2 * coeff * pf * tmp * R
+    end
 
-function Yao.AD.expect_g(op::AbstractAdd, circuit::Pair{<:MajoranaReg,<:AbstractBlock})
+    return MajoranaReg(inδ)
+end
+
+function Yao.AD.expect_g(op::AbstractBlock, in::MajoranaReg{T}) where {T}
+    ham = yaoblock2majoranasum(op)
+    return Yao.AD.expect_g(ham, in)
+end
+
+function Yao.AD.expect_g(ham::MajoranaSum, circuit::Pair{<:MajoranaReg,<:AbstractBlock})
     reg, c = circuit
     out = copy(reg) |> c
-    outδ = Yao.AD.expect_g(op, out)
-    paramsδ = [] 
+    outδ = Yao.AD.expect_g(ham, out)
+    paramsδ = []
     in, inδ = Yao.AD.apply_back!((out, outδ), c, paramsδ)
     # multiplying by 1 is a weird trick to  convert from Vector{Any} to Vector{Float}
     return inδ => 1paramsδ
+end
+
+function Yao.AD.expect_g(op::AbstractBlock, circuit::Pair{<:MajoranaReg,<:AbstractBlock})
+    ham = yaoblock2majoranasum(op)
+    return Yao.AD.expect_g(ham, circuit)
 end
 
 # -----------------------
@@ -103,9 +135,9 @@ function (::Adjoint{Any,typeof(Yao.fidelity)})(
 end
 
 function Yao.AD.fidelity_g(
-        reg1::Union{MajoranaReg,Pair{<:MajoranaReg,<:AbstractBlock}},
-        reg2::Union{MajoranaReg,Pair{<:MajoranaReg,<:AbstractBlock}}
-    )
+    reg1::Union{MajoranaReg,Pair{<:MajoranaReg,<:AbstractBlock}},
+    reg2::Union{MajoranaReg,Pair{<:MajoranaReg,<:AbstractBlock}}
+)
 
     if reg1 isa Pair
         in1, c1 = reg1
@@ -154,7 +186,7 @@ function Yao.AD.fidelity_g(
         (_, in2δ), params2δ = Yao.AD.apply_back((out2, out2δ), c2)
         res2 = in2δ => 1params2δ
     else
-       res2 = out2δ
+        res2 = out2δ
     end
 
     return (res1, res2)

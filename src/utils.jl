@@ -1,13 +1,13 @@
 #=
 #  Authors:   Jan Lukas Bosse
 #  Copyright: 2022 Phasecraft Ltd.
-#  
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,15 +94,15 @@ Convert an operator written in the Pauli basis as a ``4^n``-element vector
 to the corresponding ``2n×2n`` matrix of coefficients of products of two
 Majorana operators.
 
-Throws a `NonFLOException` if `P` contains terms that are not corresponding to 
+Throws a `NonFLOException` if `P` contains terms that are not corresponding to
 the product of two Majorana operators.
 """
 function paulibasis2majoranasquares(P::AbstractVector, locs=1:Int(log(4, length(P))))
     n = Int(log(4, length(P)))
     abs(P[1]) >= √(eps(abs(P[1]))) && @debug "Ignoring parts of the Hamiltonian that are proportional to the identity"
-    
+
     areconsecutive(locs) || throw(NonFLOException("P contains terms that are not the product of two Majoranas"))
-    
+
 
     threshold = √eps(real(eltype(P)))
     nonzero_indices = filter(0x1:UInt32(4^n-1)) do i
@@ -114,7 +114,7 @@ function paulibasis2majoranasquares(P::AbstractVector, locs=1:Int(log(4, length(
         coeff = P[i+1]
         firstmajorana = -1 # these will index into the 2n×2n matrix holding the majorana coeffs
         secondmajorana = -1
-        for k in n-1:-1:0 
+        for k in n-1:-1:0
             opi = i % 4 # i gets shifted 2 bits to the right in every iteration 
             if secondmajorana == -1
                 if opi == 1 # so we got an X operator
@@ -190,124 +190,10 @@ function qubit2majoranaevolution(U::AbstractMatrix, locs)
     return W
 end
 
-"""
-    kron2majoranaindices(k::KronBlock)
-
-Get the indices of majorana operators from a kronecker product of pauli operators
-"""
-function kron2majoranaindices(k::KronBlock{2, M, <:NTuple{M, PauliGate}}) where {M}
-    locs = first.(k.locs)
-    perm = YaoBlocks.TupleTools.sortperm(locs)
-    areconsecutive(ntuple(i->locs[perm[i]], M)) || throw(NonFLOException("$k is not acting on consecutive qubits"))
-    
-    # these are the indices in the majorana hamiltonian corresponding to this
-    # kronecker product. swap accumulates the overall sign
-    firstindex, secondindex, swap = -1, -1, true 
-    for q in perm
-        op = k.blocks[q]
-        if firstindex == -1
-            if op == X
-                firstindex = 2locs[q]
-            elseif op == Y
-                firstindex = 2locs[q] - 1
-            elseif op == Z
-                firstindex = 2locs[q]
-                secondindex = 2locs[q]-1
-            elseif op == I2
-            else
-                throw(NonFLOException("$(k.blocks) acting on $(k.locs) is not FLO"))
-            end
-        elseif secondindex == -1
-            if op == X
-                secondindex = 2locs[q] - 1
-                # @debug "second operator is γ1 on site $(locs[q])"
-            elseif op == Y
-                secondindex = 2locs[q]
-                swap = !swap
-                # @debug "second operator is γ2 on site $(locs[q])"
-            elseif op == Z
-                swap = !swap
-            elseif op == I2
-                # @debug "nothing on site $(locs[q])"
-            else
-                throw(NonFLOException("$(k.blocks) acting on $(k.locs) is not FLO"))
-            end
-        elseif op != I2
-            throw(NonFLOException("$(k.blocks) acting on $(k.locs) is not FLO"))
-        end
-    end
-    firstindex != -1 && secondindex != -1 || throw(NonFLOException("$(k.blocks) acting on $(k.locs) is not FLO"))
-    # swap if we picked up a minus sign in total
-    return swap ? (secondindex, firstindex) : (firstindex, secondindex)
-end
-
-kron2majoranaindices(k::PutBlock{2,1,ZGate}) = (2k.locs[1]-1, 2k.locs[1])
-
-# TODO: Currently all logic is duplicated in `yaoham2majoransquares(, ::Add)`
-# and all the other methods to make for fast building of the the sparse 
-# Hamiltonian. Is there a better way of first collecting all the entries 
-# with coefficients in a dict and create the actual hamiltonian last?
-
-"""
-    yaoham2majoranasquares(::Type{T}=Float64, yaoham::AbstracBlock{2})
-
-Convert a hamiltonian written as a YaoBlock into the corresponding 
-``2n×2n`` majorana hamiltonian.
-"""
-function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
-    ham = zeros(T, 2nqubits(yaoham), 2nqubits(yaoham))
-    @inbounds for k in yaoham
-        if k isa Scale
-            fast_add!(ham, _rmul!(yaoham2majoranasquares(T, k.content), k.alpha))
-            #ham += k.alpha * yaoham2majoranasquares(T, k.content)
-        elseif k isa KronBlock
-            i1, i2 = kron2majoranaindices(k)
-            ham[i1,i2] += 2
-            ham[i2,i1] -= 2
-        elseif k isa Add
-            fast_add!(ham, yaoham2majoranasquares(T, k))
-        elseif k isa PutBlock{2,1,ZGate} 
-            i1, i2 = kron2majoranaindices(k)
-            ham[i1,i2] += 2
-            ham[i2,i1] -= 2
-        elseif k isa PutBlock{2,<:Any,<:PauliKronBlock} 
-            areconsecutive(k.locs) || throw(NonFLOException("$(k.content) contains terms that are not the product of two Majoranas"))
-            i1, i2 = 2 * (minimum(k.locs) - 1) .+ kron2majoranaindices(k.content)
-            ham[i1,i2] += 2
-            ham[i2,i1] -= 2
-        else
-            throw(NonFLOException("$k not recognized as a square of Majorana operators"))
-        end
-    end
-    return ham
-end
-
-function yaoham2majoranasquares(::Type{T}, yaoham::KronBlock{2}) where {T<:Real}
-    i1, i2 = kron2majoranaindices(yaoham)
-    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
-end
-
-function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T<:Real}
-    i1, i2 = 2yaoham.locs[1]-1, 2yaoham.locs[1]
-    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
-end
-
-function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,N,<:PauliKronBlock}) where {T<:Real, N}
-    areconsecutive(yaoham.locs) || throw(NonFLOException("$(yaoham.content) contains terms that are not the product of two Majoranas"))
-    i1, i2 = 2 * (minimum(yaoham.locs) - 1) .+ kron2majoranaindices(yaoham.content)
-    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
-end
-
-function yaoham2majoranasquares(::Type{T}, yaoham::Scale) where {T<:Real}
-    return yaoham.alpha * yaoham2majoranasquares(T, yaoham.content)
-end
-
-yaoham2majoranasquares(yaoham) = yaoham2majoranasquares(Float64, yaoham)
 
 # -------------------------------------
 # Utilities to generate random matrices
 # -------------------------------------
-
 """
     random_unit_vector([Float64, ] n, N=n)
 
@@ -395,7 +281,7 @@ end
 @inline function W_matrix(R::AbstractMatrix{T}) where {T}
     n = size(R, 1) ÷ 2
     W = zeros(Complex{T}, 2n, 2n)
-    for i in 1:2:2n
+    @inbounds for i in 1:2:2n
         W[:,i] .= R[:,i] .- 1im * R[:,i+1]
         W[:,i+1] .= R[:,i] .+ 1im * R[:,i+1]
     end
@@ -409,14 +295,14 @@ end
     W = W_matrix(R)
 
     gW = zero(W)
-    for i in 1:2:2n
+    @inbounds for i in 1:2:2n
         gW[i,:] .= (W[i,:] .- 1im .* W[i+1,:]) ./ 4
         gW[i+1,:] .= (1im .* W[i,:] .+ W[i+1,:]) ./ 4
     end
 
     A = transpose(W) * gW
     # take the correct anti-symmetric part
-    for i in 1:2n
+    @inbounds for i in 1:2n
         for j in i+1:2n
             A[j,i] = -A[i,j]
         end
@@ -430,7 +316,7 @@ end
 @inline function B_matrix(A)
     n = size(A, 1) ÷ 2
     B = zero(A)
-    for i in 1:2:2n
+    @inbounds for i in 1:2:2n
         B[:,i] .= A[:,i] .+ A[:,i+1]
         B[:,i+1] .= -1im .* A[:,i] .+ 1im .* A[:,i+1]
     end
@@ -440,7 +326,7 @@ end
 @inline function C_matrix(W)
     n = size(W, 1) ÷ 2
     C = zero(W)
-    for i in 1:2:2n
+    @inbounds for i in 1:2:2n
         C[:,i] .= -W[i+1,:]
         C[:,i+1] .= W[i,:]
     end
@@ -453,7 +339,7 @@ end
 @inline function B_tilde_matrix(A)
     n = size(A, 1) ÷ 2
     B = zero(A)
-    for g in 1:2:2n, j in 1:2:2n
+    @inbounds for g in 1:2:2n, j in 1:2:2n
         if j < g
             B[j,g] = -A[j,g] + 1im * A[j,g+1]
             B[j+1,g] = 1im * A[j+1,g] - A[j+1,g+1]

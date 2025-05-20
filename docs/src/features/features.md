@@ -47,14 +47,20 @@ result = apply(reg, gate)
 ```
 
 ## Measuring expectation values
-The same goes measuring expectation values 
+Measuring expectation values with respect to (almost) arbitrary `Yao.AbstractBlock`s
+works exactly the same way it does in `Yao.jl` using `expect`:
 ```@docs
 expect
 ```
-where (for now) `op` is restricted to be an observable quadratic in the 
-Majorana operators (see [Known restrictions](@ref)). 
-See the section about [`expect`](https://docs.yaoquantum.org/stable/man/blocks.html#YaoAPI.expect-Tuple{AbstractBlock,%20DensityMatrix})
-in the `Yao.jl` documentation for the details.
+
+But if you need convert expectation values many times with respect to the same
+observable `op` it is recommended to convert the `Yao.AbstractBlock` to a 
+`MajoranaSum` which acts as a (more performant) replacement of `op` in `expect`
+and `expect'`:
+```@docs
+MajoranaSum
+FLOYao.MajoranaTerm
+```
 
 ## Sampling
 Samples in the computational basis can be obtained with the same functions as 
@@ -92,6 +98,7 @@ FLOYao.qubit2paulibasis
 FLOYao.qubit2majoranaevolution
 FLOYao.paulibasis2majoranasquares
 FLOYao.yaoham2majoranasquares
+FLOYao.yaoblock2majoranasum
 FLOYao.majorana2arrayreg
 FLOYao.random_orthogonal_matrix
 ```

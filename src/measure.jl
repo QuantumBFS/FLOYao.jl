@@ -1,13 +1,13 @@
 #=
 #  Authors:   Jan Lukas Bosse
 #  Copyright: 2022 Phasecraft Ltd.
-#  
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,10 @@ of a FLO state ``U|Ω⟩``.
 """
 function covariance_matrix(reg::MajoranaReg)
     nq = nqubits(reg)
+    # TODO: Don't instantiate G, but implement R * G by row (col?) swapping
     G = I(nq) ⊗ [0 1; -1 0]
-    return reg.state * G * reg.state'
+    M = reg.state * G * reg.state'
+    return (M - transpose(M)) / 2
 end
 
 """
@@ -44,7 +46,7 @@ for j > i.
 """
 function update_covariance_matrix!(M, i, pi, ni)
     n = size(M,1)
-    for p in 2i+1:n 
+    for p in 2i+1:n
         for q in p+1:n
             M[p,q] += (-1)^ni * M[2i-1,q] * M[2i,p] / (2pi)
             M[p,q] -= (-1)^ni * M[2i-1,p] * M[2i,q] / (2pi)
