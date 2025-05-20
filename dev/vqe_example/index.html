@@ -13,11 +13,18 @@ T = map(1:L) do i
 end |&gt; sum
 
 hamiltonian = T + U
-# not really needed, but here to circumvent some doctest  restrictions
+
+# only here due to Documenter.jl restrictions
 summary(hamiltonian)
 
 # output
-&quot;YaoBlocks.Add{2}&quot;</code></pre><p>and the ansatz circuit</p><pre><code class="language-julia hljs">circuit = chain(L)
+&quot;Add{2}&quot;</code></pre><p>and convert it to a <a href="../features/features/#FLOYao.MajoranaSum"><code>MajoranaSum</code></a></p><pre><code class="language-julia hljs">majorana_hamiltonian = MajoranaSum(hamiltonian)
+
+# only here due to Documenter.jl restrictions
+summary(majorana_hamiltonian)
+
+# output
+&quot;MajoranaSum{ComplexF64}&quot;</code></pre><div class="admonition is-success" id="Faster-expectation-values-with-MajoranaSum-6d3b2881b509ed19"><header class="admonition-header">Faster expectation values with `MajoranaSum`<a class="admonition-anchor" href="#Faster-expectation-values-with-MajoranaSum-6d3b2881b509ed19" title="Permalink"></a></header><div class="admonition-body"><p>Strictly speaking, it is not neccessary to convert the <code>hamiltonian</code> from <code>Yao.AbstractBlock</code> to <code>MajoranaSum</code>; <code>expect(::AbstractBlock, ::MajoranaReg)</code> is also implemented. But if you need to take expectation values with respect the same Hamiltonian many times–-as is the case for variational algorithms–- doing this conversion improves the performance of <code>expect</code> and <code>expect&#39;</code>.</p></div></div><p>Then we can also define the ansatz circuit</p><pre><code class="language-julia hljs">circuit = chain(L)
 for _ in 1:p
     for i in 1:L-1
         push!(circuit, rot(kron(L, i =&gt; X, i+1 =&gt; X), 0.))
@@ -39,7 +46,7 @@ nparams = nparameters(circuit)
 dispatch!(circuit, ones(nparams) ./ 100) # fix initial parameters for reproducibility
 
 for i in 1:iterations
-    _, grad = expect&#39;(hamiltonian, reg =&gt; circuit)
+    _, grad = expect&#39;(majorana_hamiltonian, reg =&gt; circuit)
     dispatch!(-, circuit, gamma * grad)
     println(&quot;Iteration $i, energy = $(round(expect(hamiltonian, reg =&gt; circuit), digits=4))&quot;)
 end
@@ -159,4 +166,4 @@ samples = measure(reg |&gt; circuit, nshots=10, rng=MersenneTwister(42))
  0000000000000000000000000000000000000000000110000000000000110000100100000000000000110000000000000011 ₍₂₎
  0000000000000000000000000000000000000010100000000000000000000000001100000000000110000000000000000000 ₍₂₎
  0000000000000000000000000000000000000001101100000000000000000000000000000000000000000011000000000000 ₍₂₎
- 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 ₍₂₎</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../features/features/">Features »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 2 November 2024 11:11">Saturday 2 November 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 ₍₂₎</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../features/features/">Features »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Tuesday 20 May 2025 16:12">Tuesday 20 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
