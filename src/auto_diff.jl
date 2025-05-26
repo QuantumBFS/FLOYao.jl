@@ -81,24 +81,25 @@ function Yao.AD.expect_g(ham::MajoranaSum, in::MajoranaReg{T}) where {T}
     nq = nqubits(in)
     C = covariance_matrix(in)
     G = I(nq) ⊗ [0 1; -1 0]
-    inδ = sum(ham) do term
+    even_terms = Iterators.filter(iseven ∘ length, ham)
+
+    # the explicit for loop is faster than using sum(even_terms) do term
+    # because it allows dot-syntax when collecting the sum
+    inδ = zero(in.state)
+    for term in even_terms
         l = length(term) ÷ 2
         A = C[term.indices, term.indices]
         A_inv, pf = try
-            A_inv = inv(A)
-            pf = pfaffian!(A)
-            A_inv, pf
+            inv(A), pfaffian!(A)
         catch   # regularising hack to deal with singular A. Is eps(T) a good choice here?
             A += eps(T) * I(l) ⊗ [0 1; -1 0]
-            A_inv = inv(A)
-            pf = pfaffian!(A)
-            A_inv, pf
+            inv(A), pfaffian!(A)
         end
         tmp = zeros(T, 2nq, length(term.indices))
         tmp[term.indices, :] .= A_inv
         R = in.state[term.indices, :] * G
         coeff = real(1im^l * term.coeff)
-        2 * coeff * pf * tmp * R
+        inδ .+= (2 * coeff * pf) .* (tmp * R)
     end
 
     return MajoranaReg(inδ)
