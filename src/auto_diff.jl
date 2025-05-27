@@ -85,23 +85,20 @@ function Yao.AD.expect_g(ham::MajoranaSum, in::MajoranaReg{T}) where {T}
 
     # the explicit for loop is faster than using sum(even_terms) do term
     # because it allows dot-syntax when collecting the sum
-    inδ = zero(in.state)
+    Cδ = zero(C)
     for term in even_terms
         l = length(term) ÷ 2
         A = C[term.indices, term.indices]
         A_inv, pf = try
             inv(A), pfaffian!(A)
         catch   # regularising hack to deal with singular A. Is eps(T) a good choice here?
-            A += eps(T) * I(l) ⊗ [0 1; -1 0]
+            A .+= eps(T) .* (I(l) ⊗ [0 1; -1 0])
             inv(A), pfaffian!(A)
         end
-        tmp = zeros(T, 2nq, length(term.indices))
-        tmp[term.indices, :] .= A_inv
-        R = in.state[term.indices, :] * G
-        coeff = real(1im^l * term.coeff)
-        inδ .+= (2 * coeff * pf) .* (tmp * R)
+        coeff = -pf * real(1im^l * term.coeff)
+        Cδ[term.indices, term.indices] .+= coeff .* A_inv
     end
-
+    inδ = 2 .* (Cδ' * in.state * G)
     return MajoranaReg(inδ)
 end
 

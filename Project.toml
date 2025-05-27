@@ -1,15 +1,17 @@
 name = "FLOYao"
 uuid = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
 authors = ["janlukas.bosse <janlukas.bosse@gmail.com> and contributors"]
-version = "1.6.0"
+version = "1.6.1"
 
 [deps]
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SkewLinearAlgebra = "5c889d49-8c60-4500-9d10-5d3a22e2f4b9"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
 [compat]
+FiniteDifferences = "0.12.32"
 SkewLinearAlgebra = "1"
 Yao = "0.8.6, 0.9"
 julia = "1"

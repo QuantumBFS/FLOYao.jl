@@ -18,10 +18,10 @@
 # ------------------------------
 # Calculating expectation values
 # ------------------------------
-function Yao.expect(ham::MajoranaSum, reg::MajoranaReg)
+function Yao.expect(ham::MajoranaSum{Complex{HT}}, reg::MajoranaReg{RT}) where {HT, RT}
     C = covariance_matrix(reg)
     even_terms = Iterators.filter(iseven ∘ length, ham)
-    sum(even_terms) do term
+    sum(even_terms, init=zero(promote_type(HT, RT))) do term
         l = length(term) ÷ 2
         coeff = real(1im^l * term.coeff)
         l == 0 ? coeff : coeff * pfaffian!(C[term.indices, term.indices])

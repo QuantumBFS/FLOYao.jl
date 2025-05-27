@@ -260,7 +260,8 @@ end
     push!(circuit, rz)
 
     ham = (put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)
-          + 0.5kron(nq, 1=>Z, 2=>Z) - kron(nq, 2 => X, 4 => Y)
+          + 0.5kron(nq, 1=>Z, 2=>Z) - kron(nq, 2 => X, 4 => Y) # some higher order terms
+          + 1.5kron(nq, 1=>X) - kron(nq, 1=>Z, 3=>Y)           # some odd parity terms
           )
     mreg = FLOYao.zero_state(nq)
     areg = zero_state(nq)
