@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Example: VQE for the TFIM · FLOYao.jl</title><meta name="title" content="Example: VQE for the TFIM · FLOYao.jl"/><meta property="og:title" content="Example: VQE for the TFIM · FLOYao.jl"/><meta property="twitter:title" content="Example: VQE for the TFIM · FLOYao.jl"/><meta name="description" content="Documentation for FLOYao.jl."/><meta property="og:description" content="Documentation for FLOYao.jl."/><meta property="twitter:description" content="Documentation for FLOYao.jl."/><meta property="og:url" content="https://QuantumBFS.github.io/FLOYao.jl/vqe_example/"/><meta property="twitter:url" content="https://QuantumBFS.github.io/FLOYao.jl/vqe_example/"/><link rel="canonical" href="https://QuantumBFS.github.io/FLOYao.jl/vqe_example/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/indigo.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">FLOYao.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Example: VQE for the TFIM</a></li><li><a class="tocitem" href="../features/features/">Features</a></li><li><a class="tocitem" href="../features/supported_gates/">Supported Gates</a></li><li><a class="tocitem" href="../background/">Mathematical Background</a></li><li><a class="tocitem" href="../adding_gates/">Adding custom gates</a></li><li><a class="tocitem" href="../known_restrictions/">Known restrictions</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Example: VQE for the TFIM</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Example: VQE for the TFIM</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/QuantumBFS/FLOYao.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Example:-VQE-for-the-transverse-field-Ising-model"><a class="docs-heading-anchor" href="#Example:-VQE-for-the-transverse-field-Ising-model">Example: VQE for the transverse field Ising model</a><a id="Example:-VQE-for-the-transverse-field-Ising-model-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-VQE-for-the-transverse-field-Ising-model" title="Permalink"></a></h1><p>One prime example of a free fermion Hamiltonian and FLO circuit is  the variational quantum eigensolver with the hamiltonian variational ansatz  applied  the transverse field Ising model. It is a good example demonstrating the capabilities of <code>FLOYao</code>.</p><p>The Hamiltonian is given as </p><p class="math-container">\[    H = J ∑_i^{L-1} X_i X_{i+1} + h ∑_i^L Z_i = U + T.\]</p><p>and as Ansatz circuits we use the Hamiltonian Variational Ansatz</p><p class="math-container">\[    U(\vec θ) = ∏_i^p e^{-iθ_{i,U} U} e^{-iθ_{i,T} T} \]</p><p>with the initial state being the groundstate of the TFIM at <span>$J = 0$</span>, so <span>$|ψ_i⟩ = |0 ⋯ 0⟩$</span>.</p><p>First, we define the Hamiltonian</p><pre><code class="language-julia hljs">using FLOYao, Yao
+L = 100 # this is far beyond what is possible with a full wavefunction simulation
+J = 1.5 
+h = -1.
+p = 10  # number of VQE layers
+U = map(1:L-1) do i
+    J * kron(L, i =&gt; X, i+1 =&gt; X)
+end |&gt; sum
+
+T = map(1:L) do i
+    h * kron(L, i =&gt; Z)
+end |&gt; sum
+
+hamiltonian = T + U
+
+# only here due to Documenter.jl restrictions
+summary(hamiltonian)
+
+# output
+&quot;Add{2}&quot;</code></pre><p>and convert it to a <a href="../features/features/#FLOYao.MajoranaSum"><code>MajoranaSum</code></a></p><pre><code class="language-julia hljs">majorana_hamiltonian = MajoranaSum(hamiltonian)
+
+# only here due to Documenter.jl restrictions
+summary(majorana_hamiltonian)
+
+# output
+&quot;MajoranaSum{ComplexF64}&quot;</code></pre><div class="admonition is-success" id="Faster-expectation-values-with-MajoranaSum-6d3b2881b509ed19"><header class="admonition-header">Faster expectation values with `MajoranaSum`<a class="admonition-anchor" href="#Faster-expectation-values-with-MajoranaSum-6d3b2881b509ed19" title="Permalink"></a></header><div class="admonition-body"><p>Strictly speaking, it is not neccessary to convert the <code>hamiltonian</code> from <code>Yao.AbstractBlock</code> to <code>MajoranaSum</code>; <code>expect(::AbstractBlock, ::MajoranaReg)</code> is also implemented. But if you need to take expectation values with respect the same Hamiltonian many times–-as is the case for variational algorithms–- doing this conversion improves the performance of <code>expect</code> and <code>expect&#39;</code>.</p></div></div><p>Then we can also define the ansatz circuit</p><pre><code class="language-julia hljs">circuit = chain(L)
+for _ in 1:p
+    for i in 1:L-1
+        push!(circuit, rot(kron(L, i =&gt; X, i+1 =&gt; X), 0.))
+    end
+    for i in 1:L
+        push!(circuit, put(L, i =&gt; Rz(0.)))
+    end
+end
+
+# output</code></pre><p>as well as the initial state</p><pre><code class="language-julia hljs">reg = FLOYao.zero_state(L)
+typeof(reg)
+
+# output
+MajoranaReg{Float64}</code></pre><p>Now that we defined the hamiltonian, the ansatz circuit and the initial state we can perform simple gradient descent on the energy expectation value to find an approximation to the groundstate of <span>$H$</span>:</p><pre><code class="language-julia hljs">iterations = 100
+gamma = 2e-2
+
+# set the initial parameters
+nparams = nparameters(circuit)
+dispatch!(circuit, ones(nparams) ./ 100) # fix initial parameters for reproducibility
+
+for i in 1:iterations
+    _, grad = expect&#39;(majorana_hamiltonian, reg =&gt; circuit)
+    dispatch!(-, circuit, gamma * grad)
+    println(&quot;Iteration $i, energy = $(round(expect(hamiltonian, reg =&gt; circuit), digits=4))&quot;)
+end
+
+# output
+Iteration 1, energy = -99.7577
+Iteration 2, energy = -100.1858
+Iteration 3, energy = -100.3843
+Iteration 4, energy = -100.6364
+Iteration 5, energy = -101.0342
+Iteration 6, energy = -101.6735
+Iteration 7, energy = -102.6934
+Iteration 8, energy = -104.2918
+Iteration 9, energy = -106.7225
+Iteration 10, energy = -110.2443
+Iteration 11, energy = -114.983
+Iteration 12, energy = -120.7112
+Iteration 13, energy = -126.7071
+Iteration 14, energy = -131.975
+Iteration 15, energy = -135.8116
+Iteration 16, energy = -138.1614
+Iteration 17, energy = -139.4181
+Iteration 18, energy = -140.0345
+Iteration 19, energy = -140.3264
+Iteration 20, energy = -140.4677
+Iteration 21, energy = -140.5422
+Iteration 22, energy = -140.5877
+Iteration 23, energy = -140.6206
+Iteration 24, energy = -140.648
+Iteration 25, energy = -140.6729
+Iteration 26, energy = -140.6966
+Iteration 27, energy = -140.7196
+Iteration 28, energy = -140.7423
+Iteration 29, energy = -140.7647
+Iteration 30, energy = -140.7869
+Iteration 31, energy = -140.809
+Iteration 32, energy = -140.831
+Iteration 33, energy = -140.8529
+Iteration 34, energy = -140.8747
+Iteration 35, energy = -140.8965
+Iteration 36, energy = -140.9182
+Iteration 37, energy = -140.9398
+Iteration 38, energy = -140.9614
+Iteration 39, energy = -140.983
+Iteration 40, energy = -141.0045
+Iteration 41, energy = -141.026
+Iteration 42, energy = -141.0475
+Iteration 43, energy = -141.0689
+Iteration 44, energy = -141.0904
+Iteration 45, energy = -141.1118
+Iteration 46, energy = -141.1332
+Iteration 47, energy = -141.1545
+Iteration 48, energy = -141.1759
+Iteration 49, energy = -141.1973
+Iteration 50, energy = -141.2187
+Iteration 51, energy = -141.24
+Iteration 52, energy = -141.2614
+Iteration 53, energy = -141.2828
+Iteration 54, energy = -141.3042
+Iteration 55, energy = -141.3256
+Iteration 56, energy = -141.347
+Iteration 57, energy = -141.3685
+Iteration 58, energy = -141.3899
+Iteration 59, energy = -141.4114
+Iteration 60, energy = -141.4329
+Iteration 61, energy = -141.4544
+Iteration 62, energy = -141.476
+Iteration 63, energy = -141.4976
+Iteration 64, energy = -141.5193
+Iteration 65, energy = -141.5409
+Iteration 66, energy = -141.5627
+Iteration 67, energy = -141.5844
+Iteration 68, energy = -141.6062
+Iteration 69, energy = -141.6281
+Iteration 70, energy = -141.65
+Iteration 71, energy = -141.672
+Iteration 72, energy = -141.694
+Iteration 73, energy = -141.7161
+Iteration 74, energy = -141.7383
+Iteration 75, energy = -141.7605
+Iteration 76, energy = -141.7829
+Iteration 77, energy = -141.8052
+Iteration 78, energy = -141.8277
+Iteration 79, energy = -141.8503
+Iteration 80, energy = -141.8729
+Iteration 81, energy = -141.8956
+Iteration 82, energy = -141.9184
+Iteration 83, energy = -141.9414
+Iteration 84, energy = -141.9644
+Iteration 85, energy = -141.9875
+Iteration 86, energy = -142.0107
+Iteration 87, energy = -142.0341
+Iteration 88, energy = -142.0576
+Iteration 89, energy = -142.0812
+Iteration 90, energy = -142.1049
+Iteration 91, energy = -142.1287
+Iteration 92, energy = -142.1527
+Iteration 93, energy = -142.1768
+Iteration 94, energy = -142.2011
+Iteration 95, energy = -142.2255
+Iteration 96, energy = -142.25
+Iteration 97, energy = -142.2748
+Iteration 98, energy = -142.2997
+Iteration 99, energy = -142.3247
+Iteration 100, energy = -142.3499</code></pre><p>Hopefully, this is a good enough approximation to the groundstate. We can now  use this to sample from the state we found:</p><pre><code class="language-julia hljs">using Random
+samples = measure(reg |&gt; circuit, nshots=10, rng=MersenneTwister(42))
+
+# output
+
+10-element Vector{BitStr{100, BigInt}}:
+ 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 ₍₂₎
+ 0000000000000000000000000000000000000000101000000110000000000000000000000000000000000000000000000000 ₍₂₎
+ 0000000000000000000000000000000000000000000000000000000000001101100000000011001100000001100000000000 ₍₂₎
+ 0000000000000000000000000000000000000000000000000000000000000000000000000011000110000001010011000000 ₍₂₎
+ 0000000000000000000000000000000000000000000000000000000000001010000110000000000000000000000000000000 ₍₂₎
+ 0000000000000000000000000000000000000000100100000011000000011000000000000000000000000000110000000000 ₍₂₎
+ 0000000000000000000000000000000000000000000110000000000000110000100100000000000000110000000000000011 ₍₂₎
+ 0000000000000000000000000000000000000010100000000000000000000000001100000000000110000000000000000000 ₍₂₎
+ 0000000000000000000000000000000000000001101100000000000000000000000000000000000000000011000000000000 ₍₂₎
+ 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 ₍₂₎</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../features/features/">Features »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Tuesday 27 May 2025 11:24">Tuesday 27 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
