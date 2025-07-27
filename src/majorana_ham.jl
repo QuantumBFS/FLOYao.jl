@@ -216,6 +216,7 @@ function kron2majoranaterm(::Type{T}, k::PauliKronBlock) where {T}
             elseif op == I2
                 push!(indices, 2locs[q])
                 push!(indices, 2locs[q] - 1)
+                sign *= 1im
             else
                 throw(DomainError(op, "Can only handle tensor products of Pauli operators as Hamiltonians"))
             end
