@@ -172,7 +172,11 @@ product_state(bit_str) = product_state(Float64, bit_str)
 
 # vector input
 function product_state(::Type{T}, bit_configs::AbstractVector) where {T}
-    return product_state(T, DitStr{2}(bit_configs))
+    # have to do conversion to DitStr ourselves because of integer overflow
+    bit_str = sum(pairs(bit_configs), init=zero(BigInt)) do (i, b)
+        b * BigInt(2)^(i-1)
+    end |> DitStr{2,length(bit_configs),BigInt}
+    return product_state(T, bit_str)
 end
 
 # integer input

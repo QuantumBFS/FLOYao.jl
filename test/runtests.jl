@@ -94,6 +94,13 @@ end
     @test r1 ≈ r2   # because we read bit strings from right to left, vectors from left to right.
     @test r1 ≈ r3
 
+    # and checking integer overflow stuff
+    # This first one is currently broken, but not our fault...
+    # r1 = FLOYao.product_state(Float32, lbit"11111111111111111111111111111111111111111111111111111111111111111")
+    r2 = FLOYao.product_state(Float32, ones(Int, 65))
+    r3 = FLOYao.product_state(Float32, 65, BigInt(2)^66 - 1)
+    @test r2 ≈ r3
+
     nq = 5
     mreg = FLOYao.rand_state(nq)
     @test mreg.state * mreg.state' ≈ I(2nq)
