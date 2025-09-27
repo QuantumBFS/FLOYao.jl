@@ -93,7 +93,7 @@ end
     for i in 1:nq
         pi = (1 + covmat[2i-1,2i]) / 2
         ni = rand(rng) > pi
-        out += ni * 2^(i-1)
+        out += ni * BigInt(2)^(i-1)
         update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
     end
     return out

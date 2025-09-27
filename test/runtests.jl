@@ -96,7 +96,7 @@ end
 
     # and checking integer overflow stuff
     # This first one is currently broken, but not our fault...
-    # r1 = FLOYao.product_state(Float32, lbit"11111111111111111111111111111111111111111111111111111111111111111")
+    r1 = FLOYao.product_state(Float32, Yao.lbit"11111111111111111111111111111111111111111111111111111111111111111")
     r2 = FLOYao.product_state(Float32, ones(Int, 65))
     r3 = FLOYao.product_state(Float32, 65, BigInt(2)^66 - 1)
     @test r2 ≈ r3
@@ -506,6 +506,13 @@ end
     mhist = StatsBase.normalize(fit(Histogram, Int.(msamples), nbins=2^3), mode=:probability)
     ahist = StatsBase.normalize(fit(Histogram, Int.(asamples), nbins=2^3), mode=:probability)
     @test sum(abs, ahist.weights - mhist.weights) < 0.01
+
+
+    # and with more than 64 qubits
+    bit_str = Yao.lbit"100101010010100101010010100101010010010010101001010010101001010010101001"
+    mreg = FLOYao.product_state(bit_str)
+    sample = measure(mreg) |> only
+    @test sample == bit_str
 end
 
 @testset "utils" begin
