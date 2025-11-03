@@ -173,6 +173,13 @@ end
     ry = put(nq, 1 => Ry(0.1))
     @test_throws NonFLOException mreg |> rx
     @test_throws NonFLOException mreg |> ry
+
+    # And nesting them
+    xxg = kron(2, 1 => X, 2 => X)
+    nested_put = put(nq, (2, 3) => put(2, (1, 2) => rot(xxg, θ)))
+    mreg |> nested_put
+    areg |> nested_put
+    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 end
 
 @testset "KronBlock" begin

@@ -39,6 +39,16 @@ for (G, GT) in [(:Rz, :(RotationGate{2,T,ZGate})),
     end
 end
 
+# TODO: Find out what should actually happen here. This seems like an
+# unsustainable hack
+for BT in [:PutBlock, :ChainBlock]
+    @eval function YaoBlocks.unsafe_apply!(reg::MajoranaReg, block::PutBlock{2, N, <:$BT}) where {N}
+        nq = nqubits(block)
+        mapped_block = map_address(block.content, AddressInfo(nq, block.locs))
+        return YaoBlocks.unsafe_apply!(reg, mapped_block)
+    end
+end
+
 for GT in [:(RotationGate{2,T,XGate}),
            :(RotationGate{2,T,YGate})]
     @eval function Yao.unsafe_apply!(reg::MajoranaReg, pb::PutBlock{2,1,$GT}) where {T}

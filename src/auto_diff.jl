@@ -67,6 +67,18 @@ function Yao.AD.apply_back!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
     return (in, inδ)
 end
 
+# TODO: Find out what should actually happen here. This seems like an
+# unsustainable hack
+for BT in [:PutBlock, :ChainBlock]
+    @eval function YaoBlocks.AD.apply_back!(st::Tuple{<:MajoranaReg,<:MajoranaReg},
+                                            block::PutBlock{2, N, <:$BT},
+                                            collector) where {N}
+        nq = nqubits(block)
+        mapped_block = map_address(block.content, AddressInfo(nq, block.locs))
+        return YaoBlocks.AD.apply_back!(st, mapped_block, collector)
+    end
+end
+
 # -------------------------------
 # Gradients of expectation values
 # -------------------------------
