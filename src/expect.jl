@@ -20,7 +20,6 @@
 # ------------------------------
 function Yao.expect(ham::MajoranaSum{Complex{HT}}, reg::MajoranaReg{RT}) where {HT, RT}
     C = covariance_matrix(reg)
-    C = real(C)
     even_terms = Iterators.filter(iseven ∘ length, ham)
     sum(even_terms, init=zero(promote_type(HT, RT))) do term
         l = length(term) ÷ 2
@@ -97,5 +96,5 @@ function Yao.fidelity(reg1::MajoranaReg{T1}, reg2::MajoranaReg{T2}) where {T1,T2
     T = promote_type(T1, T2)
     nq = nqubits(reg1)
     reg = MajoranaReg(reg2.state' * reg1.state)
-    return √bitstring_probability(reg, BitStr{nq}(0))
+    return √bitstring_probability(reg, BitStr{nq,BigInt}(0))
 end

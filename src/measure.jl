@@ -30,7 +30,7 @@ of a FLO state ``U|Ω⟩``.
 function covariance_matrix(reg::MajoranaReg)
     nq = nqubits(reg)
     # TODO: Don't instantiate G, but implement R * G by row (col?) swapping
-    G = kron(I(nq), [1im 1; -1 1im])
+    G = kron(I(nq), [0 1; -1 0])
     M = reg.state * G * reg.state'
     M = (M - M') / 2
     return M
@@ -46,12 +46,17 @@ function update_covariance_matrix!(M::AbstractMatrix{T}, i, pi, ni) where {T}
     for p in 1:n, q in 1:n
         if ((p + 1) ÷ 2 == i) ⊻ ((q + 1) ÷ 2 == i)
             M[p,q] = zero(T)
+        elseif (2i-1 == p) & (2i == q)
+            M[p,q] += (-1)^ni / (2pi)
+            M[p,q] += (-1)^ni * m[2i-1,q] * m[2i,p] / (2pi)
+        elseif (2i-1 == q) & (2i == p)
+            M[p,q] -= (-1)^ni * m[2i-1,p] * m[2i,q] / (2pi)
+            M[p,q] -= (-1)^ni / (2pi)
         else
             M[p,q] -= (-1)^ni * m[2i-1,p] * m[2i,q] / (2pi)
             M[p,q] += (-1)^ni * m[2i-1,q] * m[2i,p] / (2pi)
         end
     end
-
     return M
 end
 
@@ -62,19 +67,14 @@ Construct a state matrix ∈ O(n) from a covariance_matrix.
 This is inverse to [`covariance_matrix`](@ref).
 """
 function state_matrix(cov_mat::AbstractMatrix{T}) where {T}
-    @info "cov mat before state reconstruction"
-    display(round.(real.(cov_mat), digits=3))
-    display(round.(imag.(cov_mat), digits=3))
     nq = size(cov_mat, 1) ÷ 2
-    q, h = hessenberg(real.(cov_mat))
+    q, h = hessenberg(cov_mat)
     state = Matrix(q)
     for i in 1:nq
-        if h[2i, 2i-1] > zero(real(T))
+        if h[2i, 2i-1] > zero(T)
             state[:, 2i] .*= -1
         end
     end
-    @info "state mat after state reconstruction"
-    display(state)
     return state
 end
 
@@ -102,29 +102,27 @@ If you need multiple samples from the same covmat, make sure to pass a copy in.
     nq = length(locs)
     for (ii, i) in enumerate(locs)
         pi = (1 + covmat[2i-1,2i]) / 2
-        @show pi
-        pi = real(pi)
         ni = rand(rng) > pi
-        out += ni * 2^(ii-1)
+        out += ni * BigInt(2)^(ii-1)
         update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
     end
     return out
 end
 
-# a slightly faster version, when all qubits get sampled in their normal
-# order
-# TODO: Delete this when I don't need it anymore
-@inline function sample!(covmat, rng=Random.GLOBAL_RNG)
-    out = BigInt(0)
-    nq = size(covmat,1) ÷ 2
-    for i in 1:nq
-        pi = (1 + covmat[2i-1,2i]) / 2
-        ni = rand(rng) > pi
-        out += ni * BigInt(2)^(i-1)
-        update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
-    end
-    return out
-end
+# # a slightly faster version, when all qubits get sampled in their normal
+# # order
+# # TODO: Delete this when I don't need it anymore
+# @inline function sample!(covmat, rng=Random.GLOBAL_RNG)
+#     out = BigInt(0)
+#     nq = size(covmat,1) ÷ 2
+#     for i in 1:nq
+#         pi = (1 + covmat[2i-1,2i]) / 2
+#         ni = rand(rng) > pi
+#         out += ni * BigInt(2)^(i-1)
+#         update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
+#     end
+#     return out
+# end
 
 """
     measure(reg::MajoranaReg[, locs]; nshots=1, rng=Random.GLOBAL_RNG) -> Vector{BitStr}
@@ -146,7 +144,7 @@ function Yao.measure(reg::MajoranaReg;
     M = similar(covmat)
     for i in 1:nshots
         M .= covmat
-        samples[i] = sample!(M, rng)
+        samples[i] = sample!(M, 1:nqubits(reg), rng)
     end
     return samples
 end
@@ -154,12 +152,11 @@ end
 function Yao.measure(reg::MajoranaReg, locs;
                      nshots::Int=1, rng=Random.GLOBAL_RNG)
     covmat = covariance_matrix(reg)
-    ids = sortperm(locs)
     samples = Vector{BitStr{length(locs),BigInt}}(undef, nshots)
     M = similar(covmat)
     for i in 1:nshots
         M .= covmat
-        samples[i] = sample!(M, locs, ids, rng)
+        samples[i] = sample!(M, locs, rng)
     end
     return samples
 end
@@ -181,10 +178,8 @@ resulting `BitStr`.
 """
 function Yao.measure!(reg::MajoranaReg, locs=1:nqubits(reg); rng=Random.GLOBAL_RNG)
     nq = length(locs)
-    @show det(reg.state)
     covmat = covariance_matrix(reg)
-    res = BitStr{nq}(sample!(covmat, locs, rng))
-    # display(round.(covmat, digits=2))
+    res = BitStr{nq,BigInt}(sample!(covmat, locs, rng))
     reg.state .= state_matrix(covmat)
     return res
 end
