@@ -20,6 +20,7 @@
 # ------------------------------
 function Yao.expect(ham::MajoranaSum{Complex{HT}}, reg::MajoranaReg{RT}) where {HT, RT}
     C = covariance_matrix(reg)
+    C = real(C)
     even_terms = Iterators.filter(iseven ∘ length, ham)
     sum(even_terms, init=zero(promote_type(HT, RT))) do term
         l = length(term) ÷ 2
