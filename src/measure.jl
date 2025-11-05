@@ -30,31 +30,58 @@ of a FLO state ``U|Ω⟩``.
 function covariance_matrix(reg::MajoranaReg)
     nq = nqubits(reg)
     # TODO: Don't instantiate G, but implement R * G by row (col?) swapping
-    G = I(nq) ⊗ [0 1; -1 0]
+    G = kron(I(nq), [1im 1; -1 1im])
     M = reg.state * G * reg.state'
-    return (M - transpose(M)) / 2
+    M = (M - transpose(M)) / 2
+    M[diagind(M)] .= 1im
+    return M
 end
 
 """
 Updates the covariance matrix `M`, given that the `i`th qubit was measured
 in the state `ni` with probability `pi`.
-
-# Warning
-After this procedure only the entries M[p,q] with 2i-1 < p < q
-will be correct. This is sufficient to calculate measurement probabilities
-for j > i.
 """
-function update_covariance_matrix!(M, i, pi, ni)
-    n = size(M,1)
-    for p in 2i+1:n
-        for q in p+1:n
-            M[p,q] += (-1)^ni * M[2i-1,q] * M[2i,p] / (2pi)
-            M[p,q] -= (-1)^ni * M[2i-1,p] * M[2i,q] / (2pi)
+function update_covariance_matrix!(M::AbstractMatrix{T}, i, pi, ni) where {T}
+    n = size(M, 1)
+    m = copy(M)
+    for p in 1:n, q in 1:n
+        if ((p + 1) ÷ 2 == i) ⊻ ((q + 1) ÷ 2 == i)
+            M[p,q] = zero(T)
+        else
+            M[p,q] -= (-1)^ni * m[2i-1,p] * m[2i,q] / (2pi)
+            M[p,q] += (-1)^ni * m[2i-1,q] * m[2i,p] / (2pi)
         end
     end
+
+    # manually fix the 2i-2, 2i entries. No idea why this is neccessary...
+    # It shouldn't be?
+    # M[2i-1, 2i] = (-1)^ni
+    # M[2i, 2i-1] = -(-1)^ni
+
     return M
 end
 
+"""
+    state_matrix(cov_mat::AbstractMatrix) -> AbstractMatrix
+
+Construct a state matrix ∈ O(n) from a covariance_matrix.
+This is inverse to [`covariance_matrix`](@ref).
+"""
+function state_matrix(cov_mat::AbstractMatrix{T}) where {T}
+    nq = size(cov_mat, 1) ÷ 2
+    cov_mat[diagind(cov_mat)] .= zero(T)
+    q, h = hessenberg(cov_mat)
+    state = real.(Matrix(q))
+    for i in 1:nq
+        if real(h[2i, 2i-1]) > zero(real(T))
+            state[:, 2i] .*= -1
+        end
+    end
+    return state
+end
+
+
+# TODO: Is `ids` actually needed with the new `update_covariance_matrix`?
 """
     sample!(covmat, locs=1:size(covmat,1)÷2, ids=sortperm(locs), rng=GLOBAL_RNG)
 
@@ -72,22 +99,26 @@ Take a computational basis state sample from a FLO state with given `cov`arianve
 This function works inplace on the covmat argument to avoid allocations.
 If you need multiple samples from the same covmat, make sure to pass a copy in.
 """
-@inline function sample(covmat, locs, ids,
-                        rng=Random.GLOBAL_RNG)
+@inline function sample!(covmat, locs, rng=Random.GLOBAL_RNG)
     out = BigInt(0)
     nq = length(locs)
-    for i in 1:nq
-        pi = (1 + covmat[2locs[ids[i]]-1,2locs[ids[i]]]) / 2
+    display(round.(covmat, digits=2))
+    for i in locs
+        pi = (1 + covmat[2i-1,2i]) / 2
+        @show pi
+        pi = real(pi)
         ni = rand(rng) > pi
-        out += ni * 2^(ids[i]-1)
+        out += ni * 2^(i-1)
         update_covariance_matrix!(covmat, i, ni ? 1-pi : pi, ni)
+        display(round.(covmat, digits=2))
     end
     return out
 end
 
 # a slightly faster version, when all qubits get sampled in their normal
 # order
-@inline function sample(covmat, rng=Random.GLOBAL_RNG)
+# TODO: Delete this when I don't need it anymore
+@inline function sample!(covmat, rng=Random.GLOBAL_RNG)
     out = BigInt(0)
     nq = size(covmat,1) ÷ 2
     for i in 1:nq
@@ -119,7 +150,7 @@ function Yao.measure(reg::MajoranaReg;
     M = similar(covmat)
     for i in 1:nshots
         M .= covmat
-        samples[i] = sample(M, rng)
+        samples[i] = sample!(M, rng)
     end
     return samples
 end
@@ -132,13 +163,13 @@ function Yao.measure(reg::MajoranaReg, locs;
     M = similar(covmat)
     for i in 1:nshots
         M .= covmat
-        samples[i] = sample(M, locs, ids, rng)
+        samples[i] = sample!(M, locs, ids, rng)
     end
     return samples
 end
 
 """
-    measure!([postprocess::Union{NoPostProcess, ResetTo},] reg::MajoranaReg; rng=Random.GLOBAL_RNG)
+    measure!([postprocess,] reg::MajoranaReg[, locs]; rng=Random.GLOBAL_RNG)
 
 Measure a Majorana `reg`ister in the computational basis and return the 
 resulting `BitStr`.
@@ -152,23 +183,24 @@ resulting `BitStr`.
  - `reg::MajoranaReg`: The quantum register
  - `rng::Random.GLOBAL_RNG`: The RNG to use
 """
-function Yao.measure!(reg::MajoranaReg; rng=Random.GLOBAL_RNG)
-    nq = nqubits(reg)
+function Yao.measure!(reg::MajoranaReg, locs=1:nqubits(reg); rng=Random.GLOBAL_RNG)
+    nq = length(locs)
+    @show det(reg.state)
     covmat = covariance_matrix(reg)
-    res = BitStr{nq}(sample(covmat, rng))
-    FLOYao.product_state!(reg, res)
+    res = BitStr{nq}(sample!(covmat, locs, rng))
+    display(round.(covmat, digits=2))
+    reg.state .= state_matrix(covmat)
     return res
 end
 
-function Yao.measure!(postprocess::NoPostProcess, reg::MajoranaReg; rng=Random.GLOBAL_RNG)
-    res = measure!(reg, rng=rng)
-    return res
+function Yao.measure!(postprocess::NoPostProcess, reg::MajoranaReg, locs=1:nqubits(reg);
+                      rng=Random.GLOBAL_RNG)
+    return measure!(reg, locs, rng=rng)
 end
 
-function Yao.measure!(postprocess::ResetTo, reg::MajoranaReg; rng=Random.GLOBAL_RNG)
-    nq = nqubits(reg)
-    covmat = covariance_matrix(reg)
-    res = BitStr{nq}(sample(covmat, rng))
+function Yao.measure!(postprocess::ResetTo, reg::MajoranaReg, locs=1:nqubits(reg);
+                      rng=Random.GLOBAL_RNG)
+    res = measure!(reg, locs, rng=rng)
     FLOYao.product_state!(reg, postprocess.x)
     return res
 end
