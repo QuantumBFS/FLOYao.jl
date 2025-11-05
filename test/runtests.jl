@@ -46,6 +46,24 @@ function ising_hamiltonian(nq, J, h)
     return hamiltonian
 end
 
+function check_intermediate_measurement(mreg, locs)
+    areg = FLOYao.majorana2arrayreg(mreg)
+
+    ares = measure!(areg, locs)
+    mres = measure!(mreg, locs)
+
+    return (mres != ares) ⊻ (fidelity(FLOYao.majorana2arrayreg(mreg), areg) ≈ 1)
+end
+
+function check_intermediate_measurement(mreg)
+    areg = FLOYao.majorana2arrayreg(mreg)
+
+    ares = measure!(areg)
+    mres = measure!(mreg)
+
+    return (mres != ares) ⊻ (fidelity(FLOYao.majorana2arrayreg(mreg), areg) ≈ 1)
+end
+
 @testset "fast_overlap" begin
     nq = 4
     x = randn(ComplexF64, 10, 10)
@@ -514,12 +532,21 @@ end
     ahist = StatsBase.normalize(fit(Histogram, Int.(asamples), nbins=2^3), mode=:probability)
     @test sum(abs, ahist.weights - mhist.weights) < 0.01
 
-
     # and with more than 64 qubits
     bit_str = Yao.lbit"100101010010100101010010100101010010010010101001010010101001010010101001"
     mreg = FLOYao.product_state(bit_str)
     sample = measure(mreg) |> only
     @test sample == bit_str
+
+    # and intermediate measurements
+    mreg = FLOYao.rand_state(4)
+    @test check_intermediate_measurement(mreg)
+    mreg = FLOYao.rand_state(4)
+    @test check_intermediate_measurement(mreg, [2, 3])
+    mreg = FLOYao.rand_state(4)
+    @test check_intermediate_measurement(mreg, [1, 4, 2])
+    mreg = FLOYao.rand_state(4)
+    @test check_intermediate_measurement(mreg, [3,])
 end
 
 @testset "utils" begin
