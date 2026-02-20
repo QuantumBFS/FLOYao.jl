@@ -34,23 +34,33 @@ struct MajoranaReg{T<:Real} <: AbstractRegister{2}
     state::Matrix{T}
 end
 
+const AdjointMajoranaReg{T} = AdjointRegister{2,MajoranaReg{T}}
+const MajoranaRegOrAdjointMajoranaReg{T} = Union{MajoranaReg{T},AdjointMajoranaReg{T}}
 
 MajoranaReg(::Type{T}, n::Integer) where {T} = MajoranaReg(Matrix{T}(undef, 2n, 2n))
 MajoranaReg(n::Integer) = MajoranaReg(Float64, n)
 Yao.nqubits(reg::MajoranaReg) = size(reg.state, 1) ÷ 2
 Yao.nqudits(reg::MajoranaReg) = size(reg.state, 1) ÷ 2
 Yao.nactive(reg::MajoranaReg) = Yao.nqubits(reg)
-Yao.nbatch(reg::MajoranaReg) = 1
+Yao.nbatch(::MajoranaRegOrAdjointMajoranaReg) = 1
 Yao.nremain(reg::MajoranaReg) = 0
 Yao.state(reg::MajoranaReg) = reg.state
-Base.eltype(::MajoranaReg{T}) where {T} = T
-Yao.datatype(::MajoranaReg{T}) where {T} = T
+Yao.state(reg::AdjointMajoranaReg) = state(reg.parent)
+Base.eltype(::MajoranaRegOrAdjointMajoranaReg{T}) where {T} = T
+Yao.datatype(::MajoranaRegOrAdjointMajoranaReg{T}) where {T} = T
 Base.copy(reg::MajoranaReg) = MajoranaReg(copy(reg.state))
+Base.copy(reg::AdjointMajoranaReg) = adjoint(copy(parent(reg)))
 Base.similar(reg::MajoranaReg) = MajoranaReg(similar(reg.state))
+Base.similar(reg::AdjointMajoranaReg) = adjoint(similar(parent(reg)))
 
 function Base.copyto!(dst::MajoranaReg, src::MajoranaReg)
     nqubits(dst) != nqubits(src) && throw(DimensionMismatch("nqubits(dst) = $(nqubits(dst)) != nqubits(src) = $(nqubits(src))"))
     copyto!(state(dst), state(src))
+end
+
+function Base.copyto!(dst::AdjointMajoranaReg, src::AdjointMajoranaReg)
+    copyto!(parent(dst), parent(src))
+    return dst
 end
 
 
@@ -70,13 +80,13 @@ end
 
 # The detailed version showing the contents of the register in e.g. 
 # the jupyter cell output
-function Base.show(io::IO, ::MIME"text/plain", reg::MajoranaReg)
+function Base.show(io::IO, ::MIME"text/plain", reg::MajoranaRegOrAdjointMajoranaReg)
     println(io, typeof(reg), " with $(Yao.nqubits(reg)) qubits:")
     Base.print_array(io, state(reg))
 end
 
 # Less detailed version that is used e.g. in string interpolations
-function Base.show(io::IO, reg::MajoranaReg)
+function Base.show(io::IO, reg::MajoranaRegOrAdjointMajoranaReg)
     print(io, typeof(reg), "($(nqubits(reg)))")
 end
 
@@ -100,9 +110,9 @@ function majorana2arrayreg(reg::MajoranaReg)
     # the projector U|Ω⟩⟨Ω|U^† 
     areg = Yao.rand_state(Complex{eltype(reg)}, nq)
     for i in 1:nq
-        γ_i1 = majoranaop(nq, reg.state[:,2i-1])
-        γ_i2 = majoranaop(nq, reg.state[:,2i])
-        circuit = 1im*chain(nq, γ_i2, γ_i1) + igate(nq)
+        γ_i1 = majoranaop(nq, reg.state[:, 2i-1])
+        γ_i2 = majoranaop(nq, reg.state[:, 2i])
+        circuit = 1im * chain(nq, γ_i2, γ_i1) + igate(nq)
         areg |> circuit
     end
     normalize!(areg)
@@ -174,7 +184,7 @@ product_state(bit_str) = product_state(Float64, bit_str)
 function product_state(::Type{T}, bit_configs::AbstractVector) where {T}
     # have to do conversion to DitStr ourselves because of integer overflow
     bit_str = sum(pairs(bit_configs), init=zero(BigInt)) do (i, b)
-        b * BigInt(2)^(i-1)
+        b * BigInt(2)^(i - 1)
     end |> DitStr{2,length(bit_configs),BigInt}
     return product_state(T, bit_str)
 end
@@ -216,7 +226,7 @@ Put `reg` into the all ones state
 function one_state!(reg::MajoranaReg{T}) where {T}
     fill!(reg.state, zero(T))
     for (i, j) in enumerate(diagind(reg.state))
-        reg.state[j] = (i % 4 == 1 ||  i % 4 == 0) ? one(T) : -one(T)
+        reg.state[j] = (i % 4 == 1 || i % 4 == 0) ? one(T) : -one(T)
     end
     return reg
 end

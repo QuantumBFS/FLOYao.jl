@@ -22,7 +22,7 @@ using Yao
 using StatsBase
 using Documenter
 using LinearAlgebra
-import FLOYao: majorana2arrayreg, NonFLOException
+import FLOYao: majorana2arrayreg, NonFLOException, IndefiniteOccupationException
 
 # Run the doctests
 DocMeta.setdocmeta!(FLOYao, :DocTestSetup, :(using FLOYao, Yao); recursive=true)
@@ -134,6 +134,60 @@ end
 
     tmp_wrongsize = FLOYao.zero_state(nqubits(mreg) + 1)
     @test_throws DimensionMismatch copyto!(tmp_wrongsize, mreg)
+end
+
+@testset "adjoint" begin
+    nq = 4
+    mreg = FLOYao.rand_state(Float32, nq)
+    adj = adjoint(mreg)
+
+    # type
+    @test adj isa FLOYao.AdjointMajoranaReg{Float32}
+    @test parent(adj) === mreg
+    @test adjoint(adj) === mreg
+
+    # register interface
+    @test nqubits(adj) == nq
+    @test nqudits(adj) == nq
+    @test nactive(adj) == nq
+    @test nremain(adj) == 0
+    @test nbatch(adj) == 1
+    @test eltype(adj) == Float32
+    @test Yao.datatype(adj) == Float32
+
+    # state returns the underlying matrix of the parent (same object)
+    @test state(adj) === state(mreg)
+
+    # copy produces an independent AdjointMajoranaReg
+    adj2 = copy(adj)
+    @test adj2 isa FLOYao.AdjointMajoranaReg{Float32}
+    @test adj2 == adj
+    @test parent(adj2) !== parent(adj)
+
+    # similar + copyto!
+    adj3 = similar(adj)
+    @test adj3 isa FLOYao.AdjointMajoranaReg{Float32}
+    copyto!(adj3, adj)
+    @test adj3 == adj
+
+    # copyto! size mismatch
+    adj_wrongsize = adjoint(FLOYao.zero_state(nq + 1))
+    @test_throws DimensionMismatch copyto!(adj_wrongsize, adj)
+
+    # == and isapprox
+    @test adj == adj2
+    @test adj ≈ adj2
+
+    # scalar multiplication (via Yao generic AdjointRegister handler)
+    adj4 = 2.0f0 * adj
+    @test adj4 isa FLOYao.AdjointMajoranaReg{Float32}
+    @test state(adj4) ≈ 2 * state(adj)
+
+    # show — compact form
+    @test repr(adj) == "$(typeof(adj))($nq)"
+    # show — detailed form contains the type name and matrix
+    detailed = repr("text/plain", adj)
+    @test startswith(detailed, "$(typeof(adj)) with $nq qubits:")
 end
 
 @testset "PutBlock" begin
@@ -547,6 +601,59 @@ end
     @test check_intermediate_measurement(mreg, [1, 4, 2])
     mreg = FLOYao.rand_state(4)
     @test check_intermediate_measurement(mreg, [3,])
+end
+
+@testset "number_conserving" begin
+    # Helper: build a number-conserving circuit on nq qubits.
+    # exp(iθ XX) and exp(iθ YY) are individually number-conserving, as is
+    # exp(iθ X⋯X) / exp(iθ Y⋯Y) with any number of Z's between the endpoints.
+    function number_conserving_circuit(nq, thetas)
+        circuit = chain(nq)
+        for (k, θ) in enumerate(thetas)
+            i, j = mod1(k, nq-1), mod1(k, nq-1) + 1
+            zs = [m => Z for m in i+1:j-1]
+            xx = kron(nq, i => X, zs..., j => X)
+            yy = kron(nq, i => Y, zs..., j => Y)
+            push!(circuit, rot(xx, θ))
+            push!(circuit, rot(yy, θ))
+        end
+        return circuit
+    end
+
+    nq = 4
+    θs = [0.3, 0.7, -0.5, 1.1, 0.2, -0.9]
+    circuit1 = number_conserving_circuit(nq, θs)
+    circuit2 = number_conserving_circuit(nq, reverse(θs))
+
+    mreg1 = FLOYao.product_state(bit"1001") |> circuit1
+    mreg2 = FLOYao.product_state(bit"1001") |> circuit2
+    areg1 = product_state(bit"1001") |> circuit1
+    areg2 = product_state(bit"1001") |> circuit2
+
+    # overlap matches ArrayReg
+    @test isapprox(adjoint(mreg1) * mreg2, adjoint(areg1) * areg2, atol=1e-7)
+
+    # self-overlap is 1
+    @test adjoint(mreg1) * mreg1 ≈ 1
+
+    # orthogonal product states with the same particle number
+    mreg1 = FLOYao.product_state(bit"1001")
+    mreg2 = FLOYao.product_state(bit"0110")
+    areg1 = product_state(bit"1001")
+    areg2 = product_state(bit"0110")
+    @test isapprox(adjoint(mreg1) * mreg2, adjoint(areg1) * areg2, atol=1e-7)
+
+    # different particle numbers → 0 without error
+    mreg2 = FLOYao.product_state(bit"1110")
+    @test adjoint(mreg1) * mreg2 == 0
+
+    # size mismatch → error
+    mreg2 = FLOYao.product_state(bit"100")
+    @test_throws ErrorException adjoint(mreg2) * mreg1
+
+    # indefinite particle number → IndefiniteOccupationException
+    mreg2 = FLOYao.rand_state(nq)
+    @test_throws IndefiniteOccupationException adjoint(mreg1) * mreg2
 end
 
 @testset "utils" begin

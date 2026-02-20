@@ -65,7 +65,7 @@ function bitstring_probability(reg::MajoranaReg{T}, bit_string::DitStr{2,N,ST}) 
     p = one(T)
     M = covariance_matrix(reg)
     for i in 1:N
-        ni = bit_string[i]
+        ni = Bool(bit_string[i])
         pi = (1 + (-1)^ni * M[2i-1, 2i]) / 2
         pi ≈ 0 && return zero(T)
         p *= pi

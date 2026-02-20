@@ -24,11 +24,21 @@ const σs = [[1 0; 0 1], [0 1; 1 0], [0 -1im; 1im 0], [1 0; 0 -1]]
 """Tests if all entries in `locs` are consecutive"""
 areconsecutive(locs) = all(locs[i+1] == locs[i]+1 || locs[i+1] == locs[i]-1 for i in 1:length(locs)-1)
 
+function isapproxzero(x; atol=1e-10)
+    isapprox(x, zero(x), atol=atol)
+end
+
 struct NonFLOException <: Exception
     msg::String
 end
 
 Base.showerror(io::IO, exc::NonFLOException) = print(io, "NonFLOException: ", exc.msg)
+
+struct IndefiniteOccupationException <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, exc::IndefiniteOccupationException) = print(io, "IndefiniteOccupationException: ", exc.msg)
 
 "Majorana operator in a system with `n` on site Majorana site `i`"
 function majoranaop(n, i::Integer)

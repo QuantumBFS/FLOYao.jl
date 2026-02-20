@@ -71,7 +71,7 @@ measure(::MajoranaReg)
 measure!(::MajoranaReg)
 ```
 
-## Fidelities and bitstring probabilities
+## Fidelities, overlaps and bitstring probabilities
 Fidelities between two `MajoranaReg`s can be computed the same way as in 
 `Yao.jl`:
 
@@ -86,6 +86,14 @@ the computational basis:
 ```@docs
 FLOYao.bitstring_probability
 ```
+
+If `ψ` and `φ` are FLO states with definite particle number and both are prepared
+by circuits with `det(U) = 0` their overlap can be computed via `ψ' * φ`:
+
+```@docs
+*(::AdjointMajoranaReg, ::MajoranaReg)
+```
+
 
 ## Non-exported functions
 The following functions are not exported and not really needed for the 
