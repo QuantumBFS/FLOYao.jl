@@ -98,8 +98,6 @@ function Base.:*(bra::AdjointMajoranaReg, ket::MajoranaReg)
     ψ = parent(bra)
     xlocs1, R1 = productstate_and_circuit_decomposition(ψ)
     xlocs2, R2 = productstate_and_circuit_decomposition(ket)
-    # display(round.(R1, digits=2))
-    # display(round.(R2, digits=2))
     length(xlocs1) == length(xlocs2) || return zero(complex(eltype(ψ)))
     S = majorana2unitary(R2' * R1)
     n_swaps1 = sum(xlocs1) - length(xlocs1) * (length(xlocs1) - 1) ÷ 2
