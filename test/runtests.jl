@@ -630,22 +630,24 @@ end
     @test check_intermediate_measurement(mreg, [3,])
 end
 
-# TODO:
-# - Check majorana2unitary is a group homomorphism
-# - Check decomposing via productstate_and_circuit_decomposition
-#   and then reassembling should reconstruct the state
 @testset "number_conserving" begin
     nq = 4
     circuit1 = random_number_conserving_circuit(nq, 3nq)
     circuit2 = random_number_conserving_circuit(nq, 3nq)
 
-    mreg1 = FLOYao.product_state(bit"1001") |> circuit1
-    mreg2 = FLOYao.product_state(bit"1001") |> circuit2
-    areg1 = product_state(bit"1001") |> circuit1
-    areg2 = product_state(bit"1001") |> circuit2
+    flo_initstate = FLOYao.product_state(bit"1001")
+    yao_initstate = product_state(bit"1001")
+    mreg1 = copy(flo_initstate)  |> circuit1
+    mreg2 = copy(flo_initstate) |> circuit2
+    areg1 = copy(yao_initstate) |> circuit1
+    areg2 = copy(yao_initstate) |> circuit2
 
     # overlap matches ArrayReg
     @test isapprox(adjoint(mreg1) * mreg2, adjoint(areg1) * areg2, atol=1e-7)
+    @test isapprox(adjoint(mreg1) * flo_initstate, adjoint(areg1) * flo_initstate, atol=1e-7)
+
+    # ⟨ψ| U' V φ⟩ == ⟨Uψ | Vφ⟩
+    @test isapprox(adjoint(mreg1) * mreg2, flo_initstate * apply(circuit1', areg2), atol=1e-7)
 
     # self-overlap is 1
     @test adjoint(mreg1) * mreg1 ≈ 1

@@ -103,5 +103,5 @@ function Base.:*(bra::AdjointMajoranaReg, ket::MajoranaReg)
     n_swaps1 = sum(xlocs1) - length(xlocs1) * (length(xlocs1) - 1) ÷ 2
     n_swaps2 = sum(xlocs2) - length(xlocs2) * (length(xlocs2) - 1) ÷ 2
     permutation_sign = (-1)^(n_swaps1 + n_swaps2)
-    return permutation_sign * det(S[xlocs1, xlocs2])
+    return permutation_sign * det(S[xlocs2, xlocs1])
 end
