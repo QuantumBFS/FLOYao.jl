@@ -64,6 +64,33 @@ function check_intermediate_measurement(mreg)
     return (mres != ares) ⊻ (fidelity(FLOYao.majorana2arrayreg(mreg), areg) ≈ 1)
 end
 
+function random_number_conserving_circuit(nq, ngates)
+    circuit = chain(nq)
+    θs = rand(ngates)
+    for (k, θ) in enumerate(θs)
+        i, j = rand(1:nq), rand(1:nq)
+        i == j && continue
+        i, j = i < j ? (i, j) : (j, i)
+
+        zs = [qb => Z for qb in i+1:j-1]
+        xx = kron(nq, i => X, zs..., j => X)
+        yy = kron(nq, i => Y, zs..., j => Y)
+        push!(circuit, rot(xx, θ))
+        push!(circuit, rot(yy, θ))
+
+        i, j = rand(1:nq), rand(1:nq)
+        i == j && continue
+        i, j = i < j ? (i, j) : (j, i)
+
+        zs = [qb => Z for qb in i+1:j-1]
+        xy = kron(nq, i => X, zs..., j => X)
+        yx = kron(nq, i => Y, zs..., j => Y)
+        push!(circuit, rot(xy, θ))
+        push!(circuit, rot(xy, -θ))
+    end
+    return circuit
+end
+
 @testset "fast_overlap" begin
     nq = 4
     x = randn(ComplexF64, 10, 10)
@@ -603,27 +630,14 @@ end
     @test check_intermediate_measurement(mreg, [3,])
 end
 
+# TODO:
+# - Check majorana2unitary is a group homomorphism
+# - Check decomposing via productstate_and_circuit_decomposition
+#   and then reassembling should reconstruct the state
 @testset "number_conserving" begin
-    # Helper: build a number-conserving circuit on nq qubits.
-    # exp(iθ XX) and exp(iθ YY) are individually number-conserving, as is
-    # exp(iθ X⋯X) / exp(iθ Y⋯Y) with any number of Z's between the endpoints.
-    function number_conserving_circuit(nq, thetas)
-        circuit = chain(nq)
-        for (k, θ) in enumerate(thetas)
-            i, j = mod1(k, nq-1), mod1(k, nq-1) + 1
-            zs = [m => Z for m in i+1:j-1]
-            xx = kron(nq, i => X, zs..., j => X)
-            yy = kron(nq, i => Y, zs..., j => Y)
-            push!(circuit, rot(xx, θ))
-            push!(circuit, rot(yy, θ))
-        end
-        return circuit
-    end
-
     nq = 4
-    θs = [0.3, 0.7, -0.5, 1.1, 0.2, -0.9]
-    circuit1 = number_conserving_circuit(nq, θs)
-    circuit2 = number_conserving_circuit(nq, reverse(θs))
+    circuit1 = random_number_conserving_circuit(nq, 3nq)
+    circuit2 = random_number_conserving_circuit(nq, 3nq)
 
     mreg1 = FLOYao.product_state(bit"1001") |> circuit1
     mreg2 = FLOYao.product_state(bit"1001") |> circuit2

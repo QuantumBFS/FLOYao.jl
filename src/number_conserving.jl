@@ -71,7 +71,7 @@ function majorana2unitary(O::AbstractMatrix{T}) where {T<:Real}
     n = size(O, 1) ÷ 2
     U = zeros(complex(T), n, n)
     for (i, j) in Iterators.product(1:n, 1:n)
-        U[i,j] = (O[2i-1, 2j-1] + O[2i, 2j] - 1im * (O[2i, 2j-1] - O[2i-1, 2j]))/2
+        U[i,j] = (O[2i-1, 2j-1] + O[2i, 2j] + 1im * (O[2i, 2j-1] - O[2i-1, 2j]))/2
     end
     return U
 end
@@ -98,8 +98,10 @@ function Base.:*(bra::AdjointMajoranaReg, ket::MajoranaReg)
     ψ = parent(bra)
     xlocs1, R1 = productstate_and_circuit_decomposition(ψ)
     xlocs2, R2 = productstate_and_circuit_decomposition(ket)
+    # display(round.(R1, digits=2))
+    # display(round.(R2, digits=2))
     length(xlocs1) == length(xlocs2) || return zero(complex(eltype(ψ)))
-    S = majorana2unitary(R2 * R1')
+    S = majorana2unitary(R2' * R1)
     n_swaps1 = sum(xlocs1) - length(xlocs1) * (length(xlocs1) - 1) ÷ 2
     n_swaps2 = sum(xlocs2) - length(xlocs2) * (length(xlocs2) - 1) ÷ 2
     permutation_sign = (-1)^(n_swaps1 + n_swaps2)
