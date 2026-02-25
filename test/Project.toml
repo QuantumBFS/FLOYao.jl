@@ -1,8 +1,10 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+FLOYao = "6d9310a3-f1d0-41b7-8edb-11c1cf57cd2d"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Supposition = "5a0628fe-1738-4658-9b6d-0b7605a9755b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoAPI = "0843a435-28de-4971-9e8b-a9641b2983a8"

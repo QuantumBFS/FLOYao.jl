@@ -109,13 +109,21 @@ function majorana2arrayreg(reg::MajoranaReg)
     # This first bit gets areg into the new vacuum by piping it through
     # the projector U|Ω⟩⟨Ω|U^† 
     areg = Yao.rand_state(Complex{eltype(reg)}, nq)
-    for i in 1:nq
-        γ_i1 = majoranaop(nq, reg.state[:, 2i-1])
-        γ_i2 = majoranaop(nq, reg.state[:, 2i])
-        circuit = 1im * chain(nq, γ_i2, γ_i1) + igate(nq)
-        areg |> circuit
+    while true
+        for i in 1:nq
+            γ_i1 = majoranaop(nq, reg.state[:, 2i-1])
+            γ_i2 = majoranaop(nq, reg.state[:, 2i])
+            circuit = 1im * chain(nq, γ_i2, γ_i1) + igate(nq)
+            areg = areg |> circuit
+        end
+        if norm(areg) < 1e-5
+            areg = Yao.rand_state(Complex{eltype(reg)}, nq)
+            continue
+        else
+            normalize!(areg)
+            break
+        end
     end
-    normalize!(areg)
     return areg
 end
 

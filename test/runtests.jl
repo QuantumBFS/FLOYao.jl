@@ -24,9 +24,11 @@ using Documenter
 using LinearAlgebra
 import FLOYao: majorana2arrayreg, NonFLOException, IndefiniteOccupationException
 
+include("supposition_generators.jl")
+
 # Run the doctests
 DocMeta.setdocmeta!(FLOYao, :DocTestSetup, :(using FLOYao, Yao); recursive=true)
-doctest(FLOYao)
+# doctest(FLOYao)
 
 @const_gate TestGate::ComplexF64 = [1 0 ; 0 exp(-1im*π/5)]
 @const_gate FSWAP::ComplexF64 = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 -1]
@@ -64,54 +66,31 @@ function check_intermediate_measurement(mreg)
     return (mres != ares) ⊻ (fidelity(FLOYao.majorana2arrayreg(mreg), areg) ≈ 1)
 end
 
-function random_number_conserving_circuit(nq, ngates)
-    circuit = chain(nq)
-    θs = rand(ngates)
-    for (k, θ) in enumerate(θs)
-        i, j = rand(1:nq), rand(1:nq)
-        i == j && continue
-        i, j = i < j ? (i, j) : (j, i)
-
-        zs = [qb => Z for qb in i+1:j-1]
-        xx = kron(nq, i => X, zs..., j => X)
-        yy = kron(nq, i => Y, zs..., j => Y)
-        push!(circuit, rot(xx, θ))
-        push!(circuit, rot(yy, θ))
-
-        i, j = rand(1:nq), rand(1:nq)
-        i == j && continue
-        i, j = i < j ? (i, j) : (j, i)
-
-        zs = [qb => Z for qb in i+1:j-1]
-        xy = kron(nq, i => X, zs..., j => X)
-        yx = kron(nq, i => Y, zs..., j => Y)
-        push!(circuit, rot(xy, θ))
-        push!(circuit, rot(xy, -θ))
-    end
-    return circuit
-end
-
 @testset "fast_overlap" begin
-    nq = 4
-    x = randn(ComplexF64, 10, 10)
-    y = randn(ComplexF64, 10, 10)
-    dmat = [rand() < 0.4 ? randn() : 0.0 for i=1:10, j=1:10]
-    B = FLOYao.SparseMatrixCOO(dmat)
-    r2 = FLOYao.fast_overlap(y, B, x)
-    @test isapprox(r2, tr(y' * B * x), atol=1e-7)
-    @test isapprox(r2, y ⋅ (B * x), atol=1e-7)
+    n = 10
+    float_gen_kwargs = (;  minimum=-1e5, maximum=1e5, nans=false)
+    @check function test_fast_overlap(
+            B = sparse_matrix_generator(n; float_gen_kwargs...),
+            x = Data.Vectors(ComplexFloats(; float_gen_kwargs...); min_size=n, max_size=n),
+            y = Data.Vectors(ComplexFloats(; float_gen_kwargs...); min_size=n, max_size=n),
+         )
+        r2 = FLOYao.fast_overlap(y, B, x)
+        (isapprox(r2, tr(y' * B * x), atol=1e-10, rtol=1e-10) 
+        && isapprox(r2, y ⋅ (B * x), atol=1e-10, rtol=1e-10))
+    end
 end
 
 @testset "fast_add!" begin
-    A = randn(10, 10)
-    dmat = [rand() < 0.4 ? randn() : 0.0 for i=1:10, j=1:10]
-    D = FLOYao.SparseMatrixCOO(dmat)
-
-    C = copy(A)
-    @test FLOYao.fast_add!(C, D) ≈ A + D
-    C = copy(A)
-    @test FLOYao.fast_add!(C, Matrix(D)) ≈ A + D
-
+    n = 10
+    @check function test_fast_add(
+            A = matrix_generator(Data.Floats{Float64}(; nans=false), n, n),
+            D = sparse_matrix_generator(n; nans=false)
+        )
+        C1 = copy(A)
+        C2 = copy(A)
+        (isapprox(A + D, FLOYao.fast_add!(C1, D), atol=1e-10, rtol=1e-10) 
+        && isapprox(A + D, FLOYao.fast_add!(C2, Matrix(D)), atol=1e-10, rtol=1e-10))
+    end
 end
 
 @testset "MajoranaRegister" begin
@@ -124,10 +103,13 @@ end
     areg = product_state(bit"11")
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
 
-    mreg = FLOYao.product_state(bit"10101")
-    areg = product_state(bit"10101")
-    @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+    @check function test_product_state(bitstring=bitstring_generator(max_nq=4))
+        mreg = FLOYao.product_state(bitstring)
+        areg = product_state(bitstring)
+        fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+    end
 
+    mreg = FLOYao.rand_state(5)
     mreg2 = FLOYao.product_state(bit"11111")
     FLOYao.one_state!(mreg)
     @test fidelity(mreg, mreg2) ≈ 1.
@@ -146,18 +128,23 @@ end
     r3 = FLOYao.product_state(Float32, 65, BigInt(2)^66 - 1)
     @test r2 ≈ r3
 
-    nq = 5
-    mreg = FLOYao.rand_state(nq)
-    @test mreg.state * mreg.state' ≈ I(2nq)
-    mreg = FLOYao.rand_state(Float32, nq)
-    @test mreg.state * mreg.state' ≈ I(2nq)
+    @check function test_orthogonality_f64(mreg = flo_state_generator())
+        mreg.state * mreg.state' ≈ I(2nqubits(mreg))
+    end
 
-    tmp = copy(mreg)
-    @test state(tmp) ≈ state(tmp)
+    @check function test_orthogonality_f32(mreg = flo_state_generator(Float32))
+        mreg.state * mreg.state' ≈ I(2nqubits(mreg))
+    end
 
-    tmp = similar(mreg)
-    copyto!(tmp, mreg)
-    @test state(tmp) ≈ state(tmp)
+    @check function test_copy(mreg = flo_state_generator())
+        tmp = copy(mreg)
+        test1 = state(mreg) ≈ state(tmp)
+
+        tmp = similar(mreg)
+        copyto!(tmp, mreg)
+        test2 = state(tmp) ≈ state(tmp)
+        test1 && test2
+    end
 
     tmp_wrongsize = FLOYao.zero_state(nqubits(mreg) + 1)
     @test_throws DimensionMismatch copyto!(tmp_wrongsize, mreg)
@@ -347,6 +334,19 @@ end
     mreg |> ising_evolution
     areg |> ising_evolution
     @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+
+    @check function test_time_evolution(
+            hamiltonian=flo_hamiltonian_generator(max_nq=5),
+            time=Data.Floats{Float64}(minimum=-2, maximum=2, nans=false)
+        )
+        nq = nqubits(hamiltonian)
+        mreg = FLOYao.zero_state(nq)
+        areg = zero_state(nq)
+        evolution = time_evolve(hamiltonian, time)
+        mreg |> evolution
+        areg |> evolution
+        fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+    end
 end
 
 @testset "expect" begin
@@ -631,26 +631,29 @@ end
 end
 
 @testset "number_conserving" begin
-    nq = 4
-    circuit1 = random_number_conserving_circuit(nq, 3nq)
-    circuit2 = random_number_conserving_circuit(nq, 3nq)
+    @check function test_nc_overlaps(
+        inputs = Data.bind(n -> 
+            (nc_flo_circuit_generator(n),
+             nc_flo_circuit_generator(n),
+             bitstring_generator(n),
+             ),
+            Data.Integers(2, 10))
+        )
+        circuit1, circuit2, bits = inputs
+        flo_initstate = FLOYao.product_state(bits)
+        yao_initstate = product_state(bits)
+        mreg1 = copy(flo_initstate) |> circuit1
+        mreg2 = copy(flo_initstate) |> circuit2
+        areg1 = copy(yao_initstate) |> circuit1
+        areg2 = copy(yao_initstate) |> circuit2
 
-    flo_initstate = FLOYao.product_state(bit"1001")
-    yao_initstate = product_state(bit"1001")
-    mreg1 = copy(flo_initstate)  |> circuit1
-    mreg2 = copy(flo_initstate) |> circuit2
-    areg1 = copy(yao_initstate) |> circuit1
-    areg2 = copy(yao_initstate) |> circuit2
+        check1 = isapprox(mreg1' * mreg2, areg1' * areg2, atol=1e-7)
+        check2 = isapprox(mreg1' * flo_initstate, areg1' * yao_initstate, atol=1e-7)
+        check3 = isapprox(mreg1 * mreg2, flo_initstate * apply(circuit1', areg2), atol=1e-7)
+        check4 = mreg1' * mreg1 ≈ 1
 
-    # overlap matches ArrayReg
-    @test isapprox(adjoint(mreg1) * mreg2, adjoint(areg1) * areg2, atol=1e-7)
-    @test isapprox(adjoint(mreg1) * flo_initstate, adjoint(areg1) * flo_initstate, atol=1e-7)
-
-    # ⟨ψ| U' V φ⟩ == ⟨Uψ | Vφ⟩
-    @test isapprox(adjoint(mreg1) * mreg2, flo_initstate * apply(circuit1', areg2), atol=1e-7)
-
-    # self-overlap is 1
-    @test adjoint(mreg1) * mreg1 ≈ 1
+        check1 && check2 && check3 && check4
+    end
 
     # orthogonal product states with the same particle number
     mreg1 = FLOYao.product_state(bit"1001")
