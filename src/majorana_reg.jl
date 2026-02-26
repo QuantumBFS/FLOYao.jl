@@ -96,34 +96,40 @@ end
 Converts a `2n×2n` MajoranaReg `reg` into a `2^n` ArrayReg.
 
 # Note
-This implementation is not very clever and should mainly be used for debugging
-purposes with small numbers of qubits. It pipes a random state ``|ψ⟩`` 
-through the projector ``U|Ω⟩⟨Ω|U^†`` which may give inaccurate results if 
-``⟨ψ|U|ψ⟩`` is very small.
+This implementation should mainly be used for debugging purposes with small
+numbers of qubits. It deterministically finds a computational basis state
+``|x⟩`` with large overlap with the target state by greedily picking the most
+likely measurement outcome at each qubit using the covariance matrix. This
+guarantees ``|⟨x|ψ⟩|² ≥ 2^{-n}``, so the subsequent projection
+``∏_i (I + iγ̃_{2i}γ̃_{2i-1})|x⟩ ∝ |ψ⟩`` is always numerically stable.
 """
 function majorana2arrayreg(reg::MajoranaReg)
     nq = nqubits(reg)
 
-    # praying here, that the rand_state has non-zero overlap with the 
-    # new vacuum state.
-    # This first bit gets areg into the new vacuum by piping it through
-    # the projector U|Ω⟩⟨Ω|U^† 
-    areg = Yao.rand_state(Complex{eltype(reg)}, nq)
-    while true
-        for i in 1:nq
-            γ_i1 = majoranaop(nq, reg.state[:, 2i-1])
-            γ_i2 = majoranaop(nq, reg.state[:, 2i])
-            circuit = 1im * chain(nq, γ_i2, γ_i1) + igate(nq)
-            areg = areg |> circuit
-        end
-        if norm(areg) < 1e-5
-            areg = Yao.rand_state(Complex{eltype(reg)}, nq)
-            continue
-        else
-            normalize!(areg)
-            break
-        end
+    # Deterministically find a starting basis state |x⟩ with guaranteed large
+    # overlap with |ψ⟩: greedily pick the more likely computational basis
+    # outcome at each qubit, so P(xₖ | x₁,…,xₖ₋₁) ≥ 1/2 at every step and
+    # |⟨x|ψ⟩|² ≥ 2^{-n}.
+    M = covariance_matrix(reg)
+    x = BigInt(0)
+    for i in 1:nq
+        p0 = (1 + M[2i-1, 2i]) / 2   # P(qubit i = 0)
+        ni = p0 < 0.5                  # pick the more likely outcome; true = qubit i is |1⟩
+        ni && (x += BigInt(2)^(i-1))
+        update_covariance_matrix!(M, i, ni ? 1 - p0 : p0, ni)
     end
+
+    # Build the deterministic starting state |x⟩ as an ArrayReg
+    areg = Yao.product_state(BitStr{nq}(x))
+
+    # Project onto |ψ⟩ by applying ∏_i (I + i γ̃_{2i} γ̃_{2i-1})
+    for i in 1:nq
+        γ_i1 = majoranaop(nq, reg.state[:, 2i-1])
+        γ_i2 = majoranaop(nq, reg.state[:, 2i])
+        circuit = 1im * chain(nq, γ_i2, γ_i1) + igate(nq)
+        areg = areg |> circuit
+    end
+    normalize!(areg)
     return areg
 end
 

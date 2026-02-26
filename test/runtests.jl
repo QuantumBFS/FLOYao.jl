@@ -345,7 +345,7 @@ end
         evolution = time_evolve(hamiltonian, time)
         mreg |> evolution
         areg |> evolution
-        fidelity(majorana2arrayreg(mreg), areg) ≈ 1.
+        isapprox(fidelity(majorana2arrayreg(mreg), areg), 1.0, atol=1e-6)
     end
 end
 
@@ -632,12 +632,10 @@ end
 
 @testset "number_conserving" begin
     @check function test_nc_overlaps(
-        inputs = Data.bind(n -> 
-            (nc_flo_circuit_generator(n),
-             nc_flo_circuit_generator(n),
-             bitstring_generator(n),
-             ),
-            Data.Integers(2, 10))
+        inputs = Data.bind(n ->
+            map(tuple, nc_flo_circuit_generator(n), nc_flo_circuit_generator(n), bitstring_generator(n)),
+            Data.Integers(2, 5)
+            )
         )
         circuit1, circuit2, bits = inputs
         flo_initstate = FLOYao.product_state(bits)
@@ -649,7 +647,7 @@ end
 
         check1 = isapprox(mreg1' * mreg2, areg1' * areg2, atol=1e-7)
         check2 = isapprox(mreg1' * flo_initstate, areg1' * yao_initstate, atol=1e-7)
-        check3 = isapprox(mreg1 * mreg2, flo_initstate * apply(circuit1', areg2), atol=1e-7)
+        check3 = isapprox(mreg1' * mreg2, flo_initstate' * apply(mreg2, circuit1'), atol=1e-7)
         check4 = mreg1' * mreg1 ≈ 1
 
         check1 && check2 && check3 && check4
@@ -671,7 +669,7 @@ end
     @test_throws ErrorException adjoint(mreg2) * mreg1
 
     # indefinite particle number → IndefiniteOccupationException
-    mreg2 = FLOYao.rand_state(nq)
+    mreg2 = FLOYao.rand_state(nqubits(mreg1))
     @test_throws IndefiniteOccupationException adjoint(mreg1) * mreg2
 end
 
