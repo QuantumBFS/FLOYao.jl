@@ -77,7 +77,7 @@ function majorana2unitary(O::AbstractMatrix{T}) where {T<:Real}
 end
 
 """
-    adjoint(ψ::MajoranaReg) * φ::MajoranaReg -> Number
+    adjoint(ψ::MajoranaReg{T}) * φ::MajoranaReg{T} -> Complex{T}
 
 Compute the inner product ``⟨ψ|φ⟩`` between two `MajoranaReg` states with definite occupation.
 
@@ -88,8 +88,9 @@ Compute the inner product ``⟨ψ|φ⟩`` between two `MajoranaReg` states with 
 
 !!! warning
     The result is only consistent with the `ArrayReg` behaviour if the number-conserving
-    unitary `U` that prepared the state has `det(U) = 1`. In general `det(U)` can be any
-    phase, and the result will differ from the `ArrayReg` overlap by that phase.
+    unitary `U` that prepared the state leaves the vacuum / all-zero state invariant,
+    i.e. ``U|Ω⟩ = |Ω⟩`` without any relative phases. Otherwise, the result will differ
+    from the `ArrayReg` overlap by that phase.
 """
 function Base.:*(bra::AdjointMajoranaReg, ket::MajoranaReg)
     nqubits(bra) == nqubits(ket) || error(
