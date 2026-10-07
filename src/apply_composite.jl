@@ -104,6 +104,10 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::PauliKronBlock)
     return reg
 end
 
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, pb::PutBlock{2,N,<:PauliKronBlock}) where {N}
+    return YaoBlocks.unsafe_apply!(reg, putkron2kron(pb))
+end
+
 # Defined in FLOYao.jl
 # const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, rgate::RGate)
@@ -118,16 +122,8 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, rgate::RGate)
 end
 
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, rpb::PutBlock{2,N,<:RGate}) where {N}
-    areconsecutive(rpb.locs) || throw(NonFLOException("$(rpb.blocks) on $(rpb.locs) is not a FLO gate"))
-    # goddamnit, 1-based indexing
-    i1, i2 = 2 * (minimum(rpb.locs) - 1) .+ kron2majoranasquare(rpb.content.block)
-    s, c = sincos(rpb.content.theta)
-    for k in 1:size(reg.state, 2)
-        ψ1, ψ2 = reg.state[i1, k], reg.state[i2, k]
-        reg.state[i1, k] = c * ψ1 + s * ψ2
-        reg.state[i2, k] = c * ψ2 - s * ψ1
-    end
-    return reg
+    kb = putkron2kron(put(nqubits(rpb), rpb.locs => rpb.content.block))
+    return YaoBlocks.unsafe_apply!(reg, RotationGate(kb, rpb.content.theta))
 end
 
 # Repeat Block specialisations

@@ -394,3 +394,16 @@ function fidelity_gradient(R)
     #                   purely real              not purely real, a bug?
     return real.(val * (1im * transpose(C) * B + transpose(C_tilde) * B_tilde)) / 4
 end
+
+
+"""
+    putkron2kron(pb::PutBlock{2,N,<:PauliKronBlock})
+
+Rewrite `put(n, locs => kron(σ1, σ2, ...))` as the equivalent full-register
+`kron(n, locs[1] => σ1, locs[2] => σ2, ...)`, so that `locs` of any order are
+handled by the `KronBlock` code paths.
+"""
+function putkron2kron(pb::PutBlock{2,N,<:PauliKronBlock}) where {N}
+    k = pb.content
+    return kron(nqubits(pb), (pb.locs[first(l)] => b for (l, b) in zip(k.locs, k.blocks))...)
+end

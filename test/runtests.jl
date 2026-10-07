@@ -673,6 +673,45 @@ end
     @test_throws IndefiniteOccupationException adjoint(mreg1) * mreg2
 end
 
+@testset "put with non-ascending locs" begin
+    nq = 4
+    mreg0 = FLOYao.rand_state(nq)
+    areg0 = majorana2arrayreg(mreg0)
+    θ = 0.37
+    paulis = (kron(X, Y), kron(Y, Y), kron(X, X), kron(Y, X))
+    locss = ((1, 2), (2, 1), (3, 2), (4, 3), (2, 3))
+
+    @testset "gates" for locs in locss, p in paulis
+        for gate in (put(nq, locs => rot(p, θ)), put(nq, locs => p),
+                     time_evolve(put(nq, locs => p), θ))
+            mreg = copy(mreg0) |> gate
+            areg = copy(areg0) |> gate
+            @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1
+        end
+    end
+
+    @testset "three qubits" for locs in ((1, 2, 3), (3, 2, 1))
+        p = kron(X, Z, Y)
+        for gate in (put(nq, locs => rot(p, θ)), put(nq, locs => p),
+                     time_evolve(put(nq, locs => p), θ))
+            mreg = copy(mreg0) |> gate
+            areg = copy(areg0) |> gate
+            @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1
+        end
+    end
+
+    @testset "observables" for locs in (locss..., (1, 3), (3, 1), (3, 2, 1), (1, 3, 4)),
+                               p in (kron(X, Y), kron(X, X), kron(Z, Y))
+        length(locs) == 2 || (p = kron(X, Z, Y))
+        h = put(nq, locs => p)
+        @test expect(h, mreg0) ≈ real(expect(h, areg0))
+    end
+
+    @testset "non-consecutive gates are rejected" begin
+        @test_throws NonFLOException copy(mreg0) |> put(nq, (1, 3) => rot(kron(X, X), θ))
+    end
+end
+
 @testset "utils" begin
     nq = 4
     ham = put(nq, 1=>Z) + 2kron(nq, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(nq, 2=>Z)

@@ -53,11 +53,11 @@ julia> yaoham = (put(4, 1=>Z) + 2kron(4, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(4, 2=>
 
 julia> MajoranaSum(yaoham)
 5-element MajoranaSum{ComplexF64}:
-  [4, 5, 6, 8] : -1.0 - 0.0im
-  [2, 7] : 0.0 + 2.0im
-  [1, 2, 3, 4] : -0.5 - 0.0im
-  [1, 2] : 0.0 - 1.0im
   [3, 4] : 0.0 - 3.5im
+  [4, 5, 6, 8] : -1.0 - 0.0im
+  [1, 2] : 0.0 - 1.0im
+  [1, 2, 3, 4] : -0.5 - 0.0im
+  [2, 7] : 0.0 + 2.0im
 ```
 """
 struct MajoranaSum{T<:Number}
@@ -252,10 +252,7 @@ function yaoblock2majoranasum(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T<:
 end
 
 function yaoblock2majoranasum(::Type{T}, yaoham::PutBlock{2,N,<:PauliKronBlock}) where {T<:Real, N}
-    mt = kron2majoranaterm(T, yaoham.content)
-    # TODO: Not sure this logic is completely correct
-    mt.indices .+= 2(minimum(yaoham.locs) - 1)
-    return unsafe_majoranasum([mt])
+    return yaoblock2majoranasum(T, putkron2kron(yaoham))
 end
 
 function yaoblock2majoranasum(::Type{T}, yaoham::Scale) where {T<:Real}
@@ -344,8 +341,7 @@ function yaoham2majoranasquares(::Type{T}, yaoham::Add{2}) where {T<:Real}
             ham[i1,i2] += 2
             ham[i2,i1] -= 2
         elseif k isa PutBlock{2,<:Any,<:PauliKronBlock}
-            areconsecutive(k.locs) || throw(NonFLOException("$(k.content) contains terms that are not the product of two Majoranas"))
-            i1, i2 = 2 * (minimum(k.locs) - 1) .+ kron2majoranasquare(k.content)
+            i1, i2 = kron2majoranasquare(putkron2kron(k))
             ham[i1,i2] += 2
             ham[i2,i1] -= 2
         else
@@ -366,9 +362,7 @@ function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,1,ZGate}) where {T
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::PutBlock{2,N,<:PauliKronBlock}) where {T<:Real, N}
-    areconsecutive(yaoham.locs) || throw(NonFLOException("$(yaoham.content) contains terms that are not the product of two Majoranas"))
-    i1, i2 = 2 * (minimum(yaoham.locs) - 1) .+ kron2majoranasquare(yaoham.content)
-    return SparseMatrixCOO([i1, i2], [i2, i1], T[2, -2], 2nqubits(yaoham), 2nqubits(yaoham))
+    return yaoham2majoranasquares(T, putkron2kron(yaoham))
 end
 
 function yaoham2majoranasquares(::Type{T}, yaoham::Scale) where {T<:Real}
