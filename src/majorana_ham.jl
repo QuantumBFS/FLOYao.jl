@@ -53,11 +53,11 @@ julia> yaoham = (put(4, 1=>Z) + 2kron(4, 1=>X, 2=>Z, 3=>Z, 4=>X) + 3.5put(4, 2=>
 
 julia> MajoranaSum(yaoham)
 5-element MajoranaSum{ComplexF64}:
+  [3, 4] : 0.0 - 3.5im
+  [4, 5, 6, 8] : -1.0 - 0.0im
   [1, 2] : 0.0 - 1.0im
   [1, 2, 3, 4] : -0.5 - 0.0im
   [2, 7] : 0.0 + 2.0im
-  [3, 4] : 0.0 - 3.5im
-  [4, 5, 6, 8] : -1.0 - 0.0im
 ```
 """
 struct MajoranaSum{T<:Number}
@@ -121,8 +121,7 @@ function Base.show(io::IO, ms::MajoranaSum)
     buf = IOBuffer()
     nterms = length(ms)
     println(buf, "$nterms-element $(typeof(ms)):")
-    # sort for deterministic output, `Dict` iteration order is arbitrary
-    for mt in sort!(collect(ms), by=mt -> mt.indices)
+    for mt in ms
         println(buf, "  ", mt.indices, " : ", mt.coeff)
     end
     print(io, String(take!(buf))[1:end-1]) # remove last newline
