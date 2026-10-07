@@ -104,6 +104,10 @@ function YaoBlocks.unsafe_apply!(reg::MajoranaReg, k::PauliKronBlock)
     return reg
 end
 
+function YaoBlocks.unsafe_apply!(reg::MajoranaReg, pb::PutBlock{2,N,<:PauliKronBlock}) where {N}
+    return YaoBlocks.unsafe_apply!(reg, putkron2kron(pb))
+end
+
 # Defined in FLOYao.jl
 # const RGate = RotationGate{2,<:Real,<:PauliKronBlock}
 function YaoBlocks.unsafe_apply!(reg::MajoranaReg, rgate::RGate)

@@ -692,7 +692,8 @@ end
 
     @testset "three qubits" for locs in ((1, 2, 3), (3, 2, 1))
         p = kron(X, Z, Y)
-        for gate in (put(nq, locs => rot(p, θ)), time_evolve(put(nq, locs => p), θ))
+        for gate in (put(nq, locs => rot(p, θ)), put(nq, locs => p),
+                     time_evolve(put(nq, locs => p), θ))
             mreg = copy(mreg0) |> gate
             areg = copy(areg0) |> gate
             @test fidelity(majorana2arrayreg(mreg), areg) ≈ 1
